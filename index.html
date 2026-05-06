@@ -317,7 +317,7 @@ function addLog(action,detail,extra){
     detail:detail,
     extra:extra||''
   });
-  if(actLog.length>500)actLog=actLog.slice(0,500);
+  // No limit on actLog — unlimited
   LS.s('actlog',actLog);
 }
 
@@ -597,13 +597,13 @@ function render(){
       <div style="display:flex;gap:5px;align-items:center"><span id="save-time" style="font-size:8px;color:#4b5563"></span><button class="btn bg2" style="font-size:10px" onclick="saveAllBtn()">Save</button><button class="btn bg2" style="font-size:10px" onclick="exportAllData()">Export</button><button class="btn bg2" style="font-size:10px" onclick="document.getElementById('import-file').click()">Import</button><button class="btn bg2" style="font-size:10px;color:#f59e0b" onclick="showStorageManager()">Storage</button><button class="btn bg2" style="font-size:10px" onclick="resetAll()">Reset</button><input type="file" id="import-file" accept=".json" style="display:none" onchange="importAllData(this)"></div>
     </div>
     <div id="storage-warn" style="display:none;background:rgba(239,68,68,.15);color:#f87171;font-size:10px;padding:4px 10px;border-radius:6px;margin-top:4px;font-weight:600;text-align:center"></div>
-    <div class="tabs">${[['bio','Biometric'],['roster','Roster'],['contractor','Contractor'],['charging','Charging'],['payslip','Pay Slip'],['realtime','Live Monitor'],['salreg','Sal Register'],['master','Master Data'],['yearly','Yearly Att'],['ot','Overtime'],['night','Night Hours'],['newentry','New Entry'],['report','Monthly Report'],['viewer','Import Viewer'],['letter','Letter Gen']].map(([k,l])=>`<button class="tb ${S.tab===k?'on':''}" onclick="setTab('${k}')">${l}</button>`).join('')}</div>
+    <div class="tabs">${[['bio','Biometric'],['roster','Roster'],['contractor','Contractor'],['charging','Charging'],['payslip','Pay Slip'],['realtime','Live Monitor'],['salreg','Sal Register'],['master','Master Data'],['yearly','Yearly Att'],['ot','Overtime'],['night','Night Hours'],['newentry','New Entry'],['report','Monthly Report'],['viewer','Import Viewer'],['letter','Letter Gen'],['dsr','DSR']].map(([k,l])=>`<button class="tb ${S.tab===k?'on':''}" onclick="setTab('${k}')">${l}</button>`).join('')}</div>
     <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
       <button class="btn bg2" style="font-size:16px;padding:4px 10px;line-height:1" onclick="document.getElementById('nav-menu').style.display=document.getElementById('nav-menu').style.display==='block'?'none':'block'">☰</button>
-      <span style="font-size:13px;font-weight:600;color:#a5b4fc">${{bio:'Biometric',roster:'Roster',contractor:'Contractor',charging:'Charging',payslip:'Pay Slip',realtime:'Live Monitor',salreg:'Sal Register',master:'Master Data',yearly:'Yearly Attendance',ot:'Overtime',night:'Night Hours',newentry:'New Employee Entry',report:'Monthly Report',viewer:'Import Viewer',letter:'Letter Generator'}[S.tab]||S.tab}</span>
+      <span style="font-size:13px;font-weight:600;color:#a5b4fc">${{bio:'Biometric',roster:'Roster',contractor:'Contractor',charging:'Charging',payslip:'Pay Slip',realtime:'Live Monitor',salreg:'Sal Register',master:'Master Data',yearly:'Yearly Attendance',ot:'Overtime',night:'Night Hours',newentry:'New Employee Entry',report:'Monthly Report',viewer:'Import Viewer',letter:'Letter Generator',dsr:'DSR — Daily Summary Report'}[S.tab]||S.tab}</span>
     </div>
     <div id="nav-menu" style="display:none;position:absolute;left:12px;right:12px;top:70px;background:#1a2236;border:1px solid rgba(99,102,241,.2);border-radius:12px;padding:8px;z-index:100;box-shadow:0 8px 32px rgba(0,0,0,.5)">
-      ${[['bio','Biometric'],['roster','Roster'],['contractor','Contractor'],['charging','Charging'],['payslip','Pay Slip'],['realtime','Live Monitor'],['salreg','Sal Register'],['master','Master Data'],['yearly','Yearly Att'],['ot','Overtime'],['night','Night Hours'],['newentry','New Entry'],['report','Monthly Report'],['viewer','Import Viewer'],['letter','Letter Gen']].map(([k,l])=>`<div style="padding:10px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:${S.tab===k?'700':'500'};color:${S.tab===k?'#a5b4fc':'#94a3b8'};background:${S.tab===k?'rgba(99,102,241,.15)':'transparent'}" onclick="document.getElementById('nav-menu').style.display='none';setTab('${k}')">${l}</div>`).join('')}
+      ${[['bio','Biometric'],['roster','Roster'],['contractor','Contractor'],['charging','Charging'],['payslip','Pay Slip'],['realtime','Live Monitor'],['salreg','Sal Register'],['master','Master Data'],['yearly','Yearly Att'],['ot','Overtime'],['night','Night Hours'],['newentry','New Entry'],['report','Monthly Report'],['viewer','Import Viewer'],['letter','Letter Gen'],['dsr','DSR']].map(([k,l])=>`<div style="padding:10px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:${S.tab===k?'700':'500'};color:${S.tab===k?'#a5b4fc':'#94a3b8'};background:${S.tab===k?'rgba(99,102,241,.15)':'transparent'}" onclick="document.getElementById('nav-menu').style.display='none';setTab('${k}')">${l}</div>`).join('')}
     </div>
   </div></header><div class="mn">`;
 
@@ -1547,6 +1547,10 @@ function render(){
       </div>
     </div>`;
     setTimeout(()=>{ltRenderMonths();},0);
+  }
+  else if(S.tab==='dsr'){
+    h+=dsrRender();
+    setTimeout(()=>dsrCalcTotals(),0);
   }
 
   h+='</div>';
@@ -2543,6 +2547,118 @@ function filoDownload() {
   ws4['!cols'] = [{wch:36},{wch:10}];
   XLSX.utils.book_append_sheet(wb2, ws4, 'Summary');
 
+  // ── ANALYSIS SHEET ──────────────────────────────────────
+  // Daily breakdown: group filoData by inDate
+  var dailyMap = {};
+  filoData.forEach(function(r){
+    var d = r.inDate;
+    if(!dailyMap[d]) dailyMap[d]={date:d,total:0,P:0,U:0,SP:0,SU:0,SKIP:0};
+    dailyMap[d].total++;
+    if(r.code==='P')          dailyMap[d].P++;
+    else if(r.code==='U')     dailyMap[d].U++;
+    else if(r.code==='SHORT(P)') dailyMap[d].SP++;
+    else if(r.code==='SHORT(U)') dailyMap[d].SU++;
+    else if(r.code==='SKIPPED')  dailyMap[d].SKIP++;
+  });
+
+  // Sort dates
+  var sortedDates = Object.keys(dailyMap).sort(function(a,b){
+    // DD.MM.YYYY sort
+    var pa=a.split('.'), pb=b.split('.');
+    var da=new Date(+pa[2],+pa[1]-1,+pa[0]);
+    var db=new Date(+pb[2],+pb[1]-1,+pb[0]);
+    return da-db;
+  });
+
+  var analysisRows = [];
+
+  // Header section
+  analysisRows.push({'Metric':'=== DAILY BREAKDOWN ===','Value':'','Count':'','Percent':''});
+  analysisRows.push({'Metric':'Date','Value':'Bio OK (P+U+Short)','Count':'Skipped (Manual)','Percent':'Bio OK %'});
+
+  sortedDates.forEach(function(d){
+    var row = dailyMap[d];
+    var bioOK = row.P + row.U + row.SP + row.SU;
+    var pct = row.total > 0 ? ((bioOK/row.total)*100).toFixed(1)+'%' : '0%';
+    var skipPct = row.total > 0 ? ((row.SKIP/row.total)*100).toFixed(1)+'%' : '0%';
+    analysisRows.push({
+      'Metric': d,
+      'Value': bioOK + ' (P:'+row.P+' U:'+row.U+' Sh:'+( row.SP+row.SU)+')',
+      'Count': row.SKIP + ' (Manual/Skip) — ' + skipPct,
+      'Percent': pct + ' Bio OK'
+    });
+  });
+
+  // Monthly totals
+  var mTotal=filoData.length;
+  var mP=0,mU=0,mSP=0,mSU=0,mSKIP=0;
+  filoData.forEach(function(r){
+    if(r.code==='P') mP++;
+    else if(r.code==='U') mU++;
+    else if(r.code==='SHORT(P)') mSP++;
+    else if(r.code==='SHORT(U)') mSU++;
+    else if(r.code==='SKIPPED') mSKIP++;
+  });
+  var mBioOK = mP+mU+mSP+mSU;
+  function pct(n){ return mTotal>0?((n/mTotal)*100).toFixed(2)+'%':'0%'; }
+
+  analysisRows.push({'Metric':'','Value':'','Count':'','Percent':''});
+  analysisRows.push({'Metric':'=== MONTHLY SUMMARY ===','Value':'','Count':'','Percent':''});
+  analysisRows.push({'Metric':'Bio Code','Value':'Count','Count':'% of Total','Percent':''});
+  analysisRows.push({'Metric':'P — Present (7+ hrs)',    'Value':mP,    'Count':pct(mP),    'Percent':''});
+  analysisRows.push({'Metric':'U — Night Shift (7+ hrs)','Value':mU,    'Count':pct(mU),    'Percent':''});
+  analysisRows.push({'Metric':'SHORT(P) — Short Day',    'Value':mSP,   'Count':pct(mSP),   'Percent':''});
+  analysisRows.push({'Metric':'SHORT(U) — Short Night',  'Value':mSU,   'Count':pct(mSU),   'Percent':''});
+  analysisRows.push({'Metric':'SKIPPED — No In/Out',     'Value':mSKIP, 'Count':pct(mSKIP), 'Percent':'← Manual entry wale'});
+  analysisRows.push({'Metric':'─────────────────────','Value':'────','Count':'────','Percent':''});
+  analysisRows.push({'Metric':'TOTAL Entries',   'Value':mTotal, 'Count':'100%',   'Percent':''});
+  analysisRows.push({'Metric':'Bio OK (P+U+Short)','Value':mBioOK,'Count':pct(mBioOK),'Percent':'← Biometric se IN/OUT hua'});
+  analysisRows.push({'Metric':'Manual/Skipped',  'Value':mSKIP,  'Count':pct(mSKIP), 'Percent':'← IN/OUT nahi kiya'});
+
+  // RPT code breakdown (only if att file was uploaded)
+  var hasAtt = filoData.some(function(r){ return r.attCode !== undefined; });
+  if(hasAtt){
+    var attCounts = {};
+    var attTotal = 0;
+    filoData.forEach(function(r){
+      if(r.attCode === undefined) return;
+      var ac = r.attCode || '(blank)';
+      attCounts[ac] = (attCounts[ac]||0)+1;
+      attTotal++;
+    });
+    analysisRows.push({'Metric':'','Value':'','Count':'','Percent':''});
+    analysisRows.push({'Metric':'=== RPT REGISTER CODE BREAKDOWN ===','Value':'(SKIPPED+SHORT entries only)','Count':'','Percent':''});
+    analysisRows.push({'Metric':'RPT Code','Value':'Count','Count':'% of Problem Entries','Percent':'Matlab'});
+    var rptOrder=['P','U','S','WE','HD','HE','R','A','CL','EL','SL','LL','ML','HN','(blank)'];
+    var rptMeaning={'P':'Bio mismatch — manual P entry','U':'Bio mismatch — manual U entry',
+      'S':'Sunday','WE':'Weekly Off','HD':'Holiday','HE':'Half Holiday','R':'Rest Day',
+      'A':'Absent','CL':'Casual Leave','EL':'Earned Leave','SL':'Sick Leave',
+      'LL':'Loss of Pay','ML':'Maternity Leave','HN':'Half Night','(blank)':'Blank/Not marked'};
+    // Sort by rptOrder then remaining
+    var allCodes = Object.keys(attCounts);
+    allCodes.sort(function(a,b){
+      var ai=rptOrder.indexOf(a), bi=rptOrder.indexOf(b);
+      if(ai>=0&&bi>=0) return ai-bi;
+      if(ai>=0) return -1; if(bi>=0) return 1;
+      return a.localeCompare(b);
+    });
+    allCodes.forEach(function(code){
+      var cnt=attCounts[code];
+      var p=attTotal>0?((cnt/attTotal)*100).toFixed(2)+'%':'0%';
+      analysisRows.push({'Metric':code,'Value':cnt,'Count':p,'Percent':rptMeaning[code]||''});
+    });
+    analysisRows.push({'Metric':'Total Problem Entries','Value':attTotal,'Count':'100%','Percent':''});
+    var manualPct = attTotal>0?((mSKIP/attTotal)*100).toFixed(2)+'%':'0%';
+    analysisRows.push({'Metric':'','Value':'','Count':'','Percent':''});
+    analysisRows.push({'Metric':'IN/OUT % (Bio OK)','Value':mBioOK,'Count':pct(mBioOK),'Percent':'Biometric se properly IN/OUT kiya'});
+    analysisRows.push({'Metric':'Manual Entry % (Skipped)','Value':mSKIP,'Count':pct(mSKIP),'Percent':'IN/OUT nahi kiya — manually entry hui'});
+  }
+
+  var wsA = XLSX.utils.json_to_sheet(analysisRows,{header:['Metric','Value','Count','Percent']});
+  wsA['!cols'] = [{wch:32},{wch:34},{wch:26},{wch:36}];
+  XLSX.utils.book_append_sheet(wb2, wsA, 'Analysis');
+  // ── END ANALYSIS SHEET ──────────────────────────────────
+
   XLSX.writeFile(wb2, 'FirstInLastOut_Processed.xlsx');
   toast('Excel downloaded!');
 }
@@ -3370,6 +3486,7 @@ function exportAllData(){
     bioraw:bioRawData||{},
     bioentries:bioEntryEntries||{},
     vwlog:vwLog||[],
+    dsrdata:dsrData||{catmap:{},entries:{}},
   };
   const json=JSON.stringify(backup);
   const blob=new Blob([json],{type:'application/json'});
@@ -3423,6 +3540,7 @@ function importAllData(input){
       if(backup.bioraw){bioRawData=backup.bioraw;LS.s('bioraw',bioRawData);}
       if(backup.bioentries){bioEntryEntries=backup.bioentries;LS.s('bioentries',bioEntryEntries);}
       if(backup.vwlog){vwLog=backup.vwlog;LS.s('vwlog',vwLog);}
+      if(backup.dsrdata){dsrData=backup.dsrdata;LS.s('dsrdata',dsrData);}
       
       // Also save to persistent storage
       try{pS('e',S.emps);pS('a',S.att);pS('h',S.hols);}catch{}
@@ -5464,7 +5582,9 @@ function vwGetFiltered(){
   const ppF=document.getElementById('vw-pp')?.value||'all';
   const sr=(document.getElementById('vw-sr')?.value||'').toLowerCase();
   return vwData.rows.filter(r=>{
-    const ppMatch=ppF==='all'||(r.emp&&r.emp.p===ppF);
+    // PP match — also check if emp exists, fallback to show all if emp missing
+    const empPP = r.emp ? r.emp.p : (S.emps.find(e=>e.i===r.eid)?.p||'');
+    const ppMatch=ppF==='all'||empPP===ppF;
     const srMatch=!sr||r.name.toLowerCase().includes(sr)||r.eid.toLowerCase().includes(sr);
     return ppMatch&&srMatch;
   });
@@ -5480,29 +5600,99 @@ function vwRender(){
   if(!vwData){document.getElementById('vw-grid').innerHTML='';return;}
   const fil=vwGetFiltered();
   const dim=vwData.dim;
-  
+
+  // ── Code totals for summary row ──
+  const TOTAL_CODES=['P','P*','U','U*','S','S*','WE','HD','HE','O/T','CL','SL','EL','A','R','HN','LL'];
+  const totals={};
+  TOTAL_CODES.forEach(c=>totals[c]=0);
+  fil.forEach(r=>{
+    for(let d=1;d<=dim;d++){
+      const c=(r.days[d]||'').trim().toUpperCase();
+      if(c&&totals.hasOwnProperty(c)) totals[c]++;
+    }
+  });
+
   let h=`<div class="cd"><div style="overflow-x:auto;max-height:70vh;overflow-y:auto"><table class="tbl"><thead><tr>
     <th class="sk" style="color:#a5b4fc;padding-left:8px;text-align:left">Employee</th>`;
   for(let d=1;d<=dim;d++){
     const dt2=new Date(vwData.yr,vwData.mon,d);
-    h+=`<th style="color:#64748b;min-width:22px;font-size:9px">${d}<br><span style="font-size:7px;opacity:.5">${DA[dt2.getDay()].slice(0,2)}</span></th>`;
+    const isSun=dt2.getDay()===0;
+    h+=`<th style="color:${isSun?'#6366f1':'#64748b'};min-width:22px;font-size:9px">${d}<br><span style="font-size:7px;opacity:.5">${DA[dt2.getDay()].slice(0,2)}</span></th>`;
   }
+  h+=`<th style="color:#22c55e;min-width:30px;font-size:9px;position:sticky;right:0;background:#161e32">P</th>`;
   h+=`</tr></thead><tbody>`;
-  
+
   fil.forEach(r=>{
-    h+=`<tr><td class="sk" style="padding:4px 8px"><div style="font-weight:500;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px">${r.name||r.eid}</div><div style="font-size:8px;color:#4b5563">${r.eid}</div></td>`;
+    // Count P codes for this employee
+    let pCount=0;
+    for(let d=1;d<=dim;d++){
+      const c=(r.days[d]||'').toUpperCase();
+      if(c==='P'||c==='P*'||c==='U'||c==='U*'||c==='S'||c==='S*') pCount++;
+    }
+    h+=`<tr onclick="vwSelFromGrid('${r.eid}')" style="cursor:pointer"><td class="sk" style="padding:4px 8px"><div style="font-weight:500;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px">${r.name||r.eid}</div><div style="font-size:8px;color:#4b5563">${r.eid}</div></td>`;
     for(let d=1;d<=dim;d++){
       const c=r.days[d]||'';
       const cs=gc(c);
-      h+=`<td>${c?`<span style="font-size:8px;font-weight:700;color:${cs.cl};font-family:'JetBrains Mono',monospace">${c}</span>`:'<span style="color:#1e293b">\u00b7</span>'}</td>`;
+      h+=`<td>${c?`<span style="font-size:8px;font-weight:700;color:${cs.cl};font-family:'JetBrains Mono',monospace">${c}</span>`:'<span style="color:#1e293b">·</span>'}</td>`;
     }
+    h+=`<td style="position:sticky;right:0;background:#161e32;font-size:9px;font-weight:700;color:#22c55e;text-align:center">${pCount||''}</td>`;
     h+=`</tr>`;
   });
-  h+=`</tbody></table></div></div>`;
+
+  // ── TOTAL ROW ──
+  h+=`<tr style="background:rgba(99,102,241,.08);border-top:2px solid rgba(99,102,241,.2)">`;
+  h+=`<td class="sk" style="padding:5px 8px;font-weight:700;font-size:10px;color:#a5b4fc;position:sticky;bottom:0;background:#1a2235">TOTAL (${fil.length})</td>`;
+  for(let d=1;d<=dim;d++){
+    // Count each code for this day
+    const dayCodes={};
+    fil.forEach(r=>{const c=(r.days[d]||'').toUpperCase();if(c)dayCodes[c]=(dayCodes[c]||0)+1;});
+    const total=Object.values(dayCodes).reduce((a,b)=>a+b,0);
+    const pDay=(dayCodes['P']||0)+(dayCodes['P*']||0)+(dayCodes['U']||0)+(dayCodes['U*']||0)+(dayCodes['S']||0)+(dayCodes['S*']||0);
+    h+=`<td style="text-align:center;font-size:8px;font-weight:700;color:${total?'#94a3b8':'#1e293b'};position:sticky;bottom:0;background:#1a2235">${total||''}</td>`;
+  }
+  h+=`<td style="position:sticky;right:0;bottom:0;background:#1a2235"></td>`;
+  h+=`</tr>`;
+  h+=`</tbody></table></div>`;
+
+  // ── CODE SUMMARY BOX ──
+  const summCodes=[
+    {code:'P', label:'Present', clr:'#16a34a'},
+    {code:'U', label:'Night', clr:'#818cf8'},
+    {code:'S', label:'Sunday', clr:'#a855f7'},
+    {code:'WE', label:'Week End', clr:'#6366f1'},
+    {code:'HD', label:'Holiday', clr:'#f97316'},
+    {code:'HE', label:'Holiday Eve', clr:'#8b5cf6'},
+    {code:'O/T', label:'O/T', clr:'#f59e0b'},
+    {code:'HN', label:'HN', clr:'#06b6d4'},
+    {code:'A', label:'Absent', clr:'#ef4444'},
+    {code:'CL', label:'CL', clr:'#3b82f6'},
+    {code:'SL', label:'SL', clr:'#ec4899'},
+    {code:'EL', label:'EL', clr:'#14b8a6'},
+    {code:'R', label:'Rest', clr:'#64748b'},
+  ];
+  h+=`<div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px;border-top:1px solid rgba(99,102,241,.1)">`;
+  summCodes.forEach(sc=>{
+    const cnt=totals[sc.code]+(sc.code==='P'?totals['P*']:0)+(sc.code==='U'?totals['U*']:0)+(sc.code==='S'?totals['S*']:0);
+    if(cnt===0)return;
+    h+=`<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:4px 10px;text-align:center">`;
+    h+=`<div style="font-size:11px;font-weight:700;color:${sc.clr}">${sc.code}</div>`;
+    h+=`<div style="font-size:13px;font-weight:800;color:${sc.clr}">${cnt}</div>`;
+    h+=`<div style="font-size:8px;color:#4b5563">${sc.label}</div>`;
+    h+=`</div>`;
+  });
+  h+=`</div>`;
+  h+=`</div>`;
+
   document.getElementById('vw-grid').innerHTML=h;
   
   // Populate employee dropdown
   vwPopulateEmpList();
+}
+
+// ── Click on grid row to select employee ──
+function vwSelFromGrid(eid){
+  const sel=document.getElementById('vw-emp-sel');
+  if(sel){sel.value=eid;vwEmpSelected();}
 }
 
 function vwPopulateEmpList(){
@@ -14359,6 +14549,10 @@ let nightData={};
 try{const nd=LS.g('nightdata');if(nd&&typeof nd==='object')nightData=nd;}catch{}
 function nightSave(){LS.s('nightdata',nightData);}
 
+let dsrData={catmap:{},entries:{}};
+try{const dd=LS.g('dsrdata');if(dd&&typeof dd==='object'&&dd.catmap)dsrData=dd;}catch{}
+function dsrSave(){LS.s('dsrdata',dsrData);}
+
 function nightGetKey(){return MF[S.mon]+'-'+S.yr;}
 
 function nightRenderList(){
@@ -14482,4 +14676,426 @@ function rtParseBio(buffer){
   }
   return result;
   }catch(err){alert('Parse error: '+err.message);return [];}
-}</script></body></html>
+}
+
+
+// ══════════════════════════════════════════════════
+// DSR — Daily Summary Report
+// ══════════════════════════════════════════════════
+
+var DSR_CATS=['EXECUTIVE','MINING SIRDAR','OVERMAN','SURVEYOR','CHAINMAN',
+  'MECHANICAL FOREMAN','ELECTRICAL FOREMAN','CLERK','SECURITY MR',
+  'TECHNICAL INSPECTOR','TELEPHONE OPERATOR','MINING DR','E&M DR'];
+
+function dsrGetCats(){
+  var catSet={};
+  var keys=Object.keys(dsrData.catmap||{});
+  for(var i=0;i<keys.length;i++) catSet[dsrData.catmap[keys[i]].cat]=1;
+  var arr=Object.keys(catSet);
+  arr.sort(function(a,b){
+    var ai=DSR_CATS.indexOf(a),bi=DSR_CATS.indexOf(b);
+    if(ai>=0&&bi>=0) return ai-bi;
+    if(ai>=0) return -1; if(bi>=0) return 1;
+    return a.localeCompare(b);
+  });
+  return arr;
+}
+
+function dsrOnRollByCat(){
+  var c={};
+  var keys=Object.keys(dsrData.catmap||{});
+  for(var i=0;i<keys.length;i++){
+    var cat=dsrData.catmap[keys[i]].cat;
+    c[cat]=(c[cat]||0)+1;
+  }
+  return c;
+}
+
+function dsrCalcPresent(date){
+  var catP={};
+  var bday=bioRawData[date];
+  if(!bday||!dsrData.catmap) return catP;
+  var eids=Object.keys(bday);
+  for(var i=0;i<eids.length;i++){
+    var eid=eids[i];
+    var emp=dsrData.catmap[eid]||dsrData.catmap[String(eid)];
+    if(!emp) continue;
+    var info=bday[eid];
+    if(info.status==='P'||info.code==='P')
+      catP[emp.cat]=(catP[emp.cat]||0)+1;
+  }
+  return catP;
+}
+
+function dsrFmtDate(d){
+  var mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var p=d.split('-');
+  return p[2]+' '+mn[parseInt(p[1])-1]+' '+p[0];
+}
+
+function dsrRender(){
+  var cats=dsrGetCats();
+  var onroll=dsrOnRollByCat();
+  var hasCatmap=Object.keys(dsrData.catmap||{}).length>0;
+  var entries=dsrData.entries||{};
+  var savedDates=Object.keys(entries).sort(function(a,b){return b.localeCompare(a);});
+  var curDate=S.dt;
+
+  var h='<div class="cd" style="padding:14px;margin-bottom:10px">';
+  h+='<div style="font-size:16px;font-weight:700;color:#a5b4fc;margin-bottom:12px">&#128202; DSR &#8212; Daily Summary Report</div>';
+
+  // STEP 1
+  h+='<div style="margin-bottom:12px;padding:10px;background:rgba(99,102,241,.07);border-radius:8px;border:1px solid rgba(99,102,241,.15)">';
+  h+='<div style="font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:6px">&#9881; STEP 1: Employee Category Setup</div>';
+  h+='<div style="font-size:10px;color:#64748b;margin-bottom:8px">Excel mein 3 columns: <b style="color:#94a3b8">EmpID | Name | Category</b></div>';
+  h+='<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
+  h+='<label style="cursor:pointer"><input type="file" accept=".xlsx,.xls" onchange="dsrUploadExcel(this)" style="display:none"><span class="btn bp" style="font-size:10px;padding:5px 12px;display:inline-block">&#128229; Upload Excel</span></label>';
+  if(hasCatmap){
+    h+='<span style="color:#22c55e;font-size:10px">&#10003; '+Object.keys(dsrData.catmap).length+' employees &middot; '+cats.length+' categories</span>';
+    h+='<button class="btn bg2" style="font-size:9px;padding:3px 8px" onclick="if(confirm(\'Catmap clear karna hai?\')){dsrData.catmap={};dsrSave();render();}">Reset</button>';
+  } else {
+    h+='<span style="color:#f59e0b;font-size:10px">Pehle Excel upload karo</span>';
+  }
+  h+='</div>';
+  if(hasCatmap){
+    h+='<div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">';
+    for(var ci=0;ci<cats.length;ci++){
+      h+='<span style="background:rgba(245,158,11,.1);color:#f59e0b;border:1px solid rgba(245,158,11,.2);border-radius:4px;padding:2px 7px;font-size:9px">'+cats[ci]+': '+(onroll[cats[ci]]||0)+'</span>';
+    }
+    h+='</div>';
+  }
+  h+='</div>';
+
+  if(!hasCatmap){
+    h+='<div style="text-align:center;color:#4b5563;font-size:11px;padding:24px">Pehle Step 1 mein Excel upload karo</div></div>';
+    return h;
+  }
+
+  // STEP 2: Entry table
+  h+='<div style="margin-bottom:12px;padding:10px;background:rgba(99,102,241,.05);border-radius:8px;border:1px solid rgba(99,102,241,.12)">';
+  h+='<div style="font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:8px">&#128203; STEP 2: DSR Entry</div>';
+  h+='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">';
+  h+='<label style="font-size:10px;color:#64748b">Date:</label>';
+  h+='<input type="date" id="dsr-date" value="'+curDate+'" class="inp" style="max-width:160px;font-size:11px;padding:4px 8px">';
+  h+='<button class="btn bp" style="font-size:10px;padding:4px 10px" onclick="dsrLoadEntry()">Load</button>';
+  h+='<button class="btn bg2" style="font-size:10px;padding:4px 8px" onclick="dsrSetToday()">Today</button>';
+  h+='<button class="btn" style="font-size:10px;padding:4px 10px;background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.3)" onclick="dsrAutoFillBio()">&#9889; Auto P from Bio</button>';
+  h+='</div>';
+
+  h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:10px">';
+  h+='<thead><tr style="background:rgba(255,255,255,.04)">';
+  var thStyle='padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.06)';
+  h+='<th style="'+thStyle+';text-align:left;color:#94a3b8">CATEGORY</th>';
+  h+='<th style="'+thStyle+';color:#22c55e">PRESENT</th>';
+  h+='<th style="'+thStyle+';color:#94a3b8">REST</th>';
+  h+='<th style="'+thStyle+';color:#60a5fa">LEAVE(CL/EL)</th>';
+  h+='<th style="'+thStyle+';color:#f59e0b">SICK LEAVE</th>';
+  h+='<th style="'+thStyle+';color:#f87171">ABSENT</th>';
+  h+='<th style="'+thStyle+';color:#a5b4fc">ON ROLL</th>';
+  h+='</tr></thead><tbody id="dsr-tbody">';
+
+  var tP=0,tR=0,tL=0,tSL=0,tA=0,tOR=0;
+  for(var ci=0;ci<cats.length;ci++){
+    var cat=cats[ci];
+    var ex=(entries[curDate]||{})[cat]||{P:0,R:0,L:0,SL:0,A:0};
+    var or=onroll[cat]||0;
+    var bd='border-bottom:1px solid rgba(255,255,255,.03)';
+    h+='<tr>';
+    h+='<td style="padding:4px 10px;font-weight:600;font-size:10px;'+bd+'">'+cat+'</td>';
+    var fields=['P','R','L','SL','A'];
+    var fColors={P:'color:#22c55e',R:'',L:'color:#60a5fa',SL:'color:#f59e0b',A:'color:#f87171'};
+    for(var fi=0;fi<fields.length;fi++){
+      var f=fields[fi];
+      h+='<td style="padding:3px;'+bd+'"><input type="number" min="0" value="'+(ex[f]||0)+'" data-ci="'+ci+'" data-f="'+f+'" oninput="dsrCalcTotals()" class="inp" style="width:52px;padding:3px;font-size:11px;text-align:center;'+fColors[f]+'"></td>';
+    }
+    h+='<td style="padding:4px 8px;text-align:center;color:#a5b4fc;font-weight:700;'+bd+'">'+or+'</td>';
+    h+='</tr>';
+    tOR+=or;
+  }
+
+  h+='</tbody><tfoot><tr style="background:rgba(245,158,11,.08);border-top:1px solid rgba(245,158,11,.3)">';
+  h+='<td style="padding:5px 10px;font-weight:700;font-size:11px;color:#f59e0b">TOTAL</td>';
+  var totCols=['P','R','L','SL','A'];
+  var totColors={P:'#22c55e',R:'#e2e8f0',L:'#60a5fa',SL:'#f59e0b',A:'#f87171'};
+  for(var ti=0;ti<totCols.length;ti++){
+    h+='<td id="dtot-'+totCols[ti]+'" style="padding:5px 8px;text-align:center;font-weight:700;color:'+totColors[totCols[ti]]+';font-size:12px">0</td>';
+  }
+  h+='<td style="padding:5px 8px;text-align:center;font-weight:700;color:#a5b4fc;font-size:12px">'+tOR+'</td>';
+  h+='</tr></tfoot></table></div>';
+
+  h+='<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">';
+  h+='<button class="btn bp" style="font-size:11px;padding:6px 14px" onclick="dsrSaveEntry()">&#128190; Save DSR</button>';
+  h+='<button class="btn" style="font-size:11px;padding:6px 14px;background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3)" onclick="dsrDownloadExcel()">&#11015; Download Excel</button>';
+  h+='<button class="btn bg2" style="font-size:11px;padding:6px 10px" onclick="dsrClearEntry()">Clear</button>';
+  h+='</div></div>';
+
+  // HISTORY
+  h+='<div style="padding:10px;background:rgba(99,102,241,.04);border-radius:8px;border:1px solid rgba(99,102,241,.1)">';
+  h+='<div style="font-size:11px;font-weight:700;color:#a5b4fc;margin-bottom:8px">&#128193; Saved Records ('+savedDates.length+')</div>';
+  if(savedDates.length===0){
+    h+='<div style="text-align:center;color:#4b5563;font-size:10px;padding:16px">Koi DSR save nahi hua abhi</div>';
+  } else {
+    h+='<div style="overflow-x:auto;max-height:280px;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:10px">';
+    h+='<thead><tr style="background:rgba(255,255,255,.03)">';
+    h+='<th style="padding:5px 8px;text-align:left;color:#64748b">Date</th>';
+    h+='<th style="padding:5px 8px;color:#22c55e">P</th><th style="padding:5px 8px;color:#94a3b8">R</th>';
+    h+='<th style="padding:5px 8px;color:#60a5fa">L</th><th style="padding:5px 8px;color:#f59e0b">SL</th>';
+    h+='<th style="padding:5px 8px;color:#f87171">A</th><th style="padding:5px 8px;color:#64748b">Action</th>';
+    h+='</tr></thead><tbody>';
+    for(var di=0;di<savedDates.length;di++){
+      var d=savedDates[di];
+      var row=entries[d];
+      var P=0,R=0,L=0,SL=0,A=0;
+      var rkeys=Object.keys(row);
+      for(var rk=0;rk<rkeys.length;rk++){var v=row[rkeys[rk]];P+=v.P||0;R+=v.R||0;L+=v.L||0;SL+=v.SL||0;A+=v.A||0;}
+      h+='<tr style="border-bottom:1px solid rgba(255,255,255,.03)">';
+      h+='<td style="padding:4px 8px;font-family:monospace;color:#a5b4fc;font-size:9px">'+dsrFmtDate(d)+'</td>';
+      h+='<td style="padding:4px 8px;text-align:center;color:#22c55e;font-weight:700">'+P+'</td>';
+      h+='<td style="padding:4px 8px;text-align:center">'+R+'</td>';
+      h+='<td style="padding:4px 8px;text-align:center;color:#60a5fa">'+L+'</td>';
+      h+='<td style="padding:4px 8px;text-align:center;color:#f59e0b">'+SL+'</td>';
+      h+='<td style="padding:4px 8px;text-align:center;color:#f87171">'+A+'</td>';
+      h+='<td style="padding:4px 8px">';
+      h+='<button class="btn bg2" style="font-size:8px;padding:2px 6px" onclick="dsrEditDate(\''+d+'\')">Edit</button> ';
+      h+='<button class="btn" style="font-size:8px;padding:2px 6px;background:rgba(34,197,94,.1);color:#22c55e;border:1px solid rgba(34,197,94,.2)" onclick="dsrDownloadDate(\''+d+'\')">&#11015;</button> ';
+      h+='<button onclick="dsrDeleteDate(\''+d+'\')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:12px;padding:0 3px">&#x2715;</button>';
+      h+='</td></tr>';
+    }
+    h+='</tbody></table></div>';
+  }
+  h+='</div></div>';
+  return h;
+}
+
+function dsrCalcTotals(){
+  var totals={P:0,R:0,L:0,SL:0,A:0};
+  var inputs=document.querySelectorAll('#dsr-tbody input');
+  for(var i=0;i<inputs.length;i++){
+    var f=inputs[i].dataset.f;
+    if(f) totals[f]=(totals[f]||0)+(parseInt(inputs[i].value)||0);
+  }
+  var fields=['P','R','L','SL','A'];
+  for(var i=0;i<fields.length;i++){
+    var el=document.getElementById('dtot-'+fields[i]);
+    if(el) el.textContent=totals[fields[i]];
+  }
+}
+
+function dsrGetEntryData(){
+  var cats=dsrGetCats();
+  var data={};
+  for(var i=0;i<cats.length;i++) data[cats[i]]={P:0,R:0,L:0,SL:0,A:0};
+  var inputs=document.querySelectorAll('#dsr-tbody input');
+  for(var i=0;i<inputs.length;i++){
+    var ci=parseInt(inputs[i].dataset.ci);
+    var f=inputs[i].dataset.f;
+    var cat=cats[ci];
+    if(cat&&f) data[cat][f]=parseInt(inputs[i].value)||0;
+  }
+  return data;
+}
+
+function dsrLoadEntry(){
+  var d=document.getElementById('dsr-date');
+  if(d) S.dt=d.value;
+  render();
+}
+
+function dsrSetToday(){
+  S.dt=new Date().toISOString().split('T')[0];
+  render();
+}
+
+function dsrSaveEntry(){
+  var dateEl=document.getElementById('dsr-date');
+  var date=dateEl?dateEl.value:S.dt;
+  if(!date){toast('Date select karo!',false);return;}
+  if(!dsrData.entries) dsrData.entries={};
+  dsrData.entries[date]=dsrGetEntryData();
+  dsrSave();
+  toast('DSR saved: '+dsrFmtDate(date));
+  render();
+}
+
+function dsrAutoFillBio(){
+  var dateEl=document.getElementById('dsr-date');
+  var date=dateEl?dateEl.value:S.dt;
+  var catP=dsrCalcPresent(date);
+  if(Object.keys(catP).length===0){toast('Is date ka Bio data nahi mila!',false);return;}
+  var cats=dsrGetCats();
+  var inputs=document.querySelectorAll('#dsr-tbody input[data-f="P"]');
+  for(var i=0;i<inputs.length;i++){
+    var ci=parseInt(inputs[i].dataset.ci);
+    var cat=cats[ci];
+    if(cat&&catP[cat]!==undefined) inputs[i].value=catP[cat];
+  }
+  dsrCalcTotals();
+  toast('Bio se Present auto-fill hua!');
+}
+
+function dsrClearEntry(){
+  var inputs=document.querySelectorAll('#dsr-tbody input');
+  for(var i=0;i<inputs.length;i++) inputs[i].value=0;
+  dsrCalcTotals();
+}
+
+function dsrEditDate(date){
+  S.dt=date;
+  render();
+}
+
+function dsrDeleteDate(date){
+  if(!confirm(dsrFmtDate(date)+' ka DSR delete karna hai?')) return;
+  delete dsrData.entries[date];
+  dsrSave();
+  toast('Deleted');
+  render();
+}
+
+function dsrMakeXlsx(date,data){
+  var cats=Object.keys(data);
+  var onroll=dsrOnRollByCat();
+  var tP=0,tR=0,tL=0,tSL=0,tA=0,tOR=0;
+
+  // ── SECTION 1: Category-wise Summary ──
+  var lines=[];
+  lines.push('DAILY SUMMARY REPORT - KATKONA 1&2 INCLINE SECL');
+  lines.push('Date: '+dsrFmtDate(date));
+  lines.push('');
+  lines.push('SUMMARY,PRESENT TOTAL,REST,LEAVE (CL/EL),SICK LEAVE,ABSENT,ON ROLL');
+  for(var i=0;i<cats.length;i++){
+    var cat=cats[i];var d=data[cat]||{};var or=onroll[cat]||0;
+    lines.push(cat+','+(d.P||0)+','+(d.R||0)+','+(d.L||0)+','+(d.SL||0)+','+(d.A||0)+','+or);
+    tP+=d.P||0;tR+=d.R||0;tL+=d.L||0;tSL+=d.SL||0;tA+=d.A||0;tOR+=or;
+  }
+  lines.push('TOTAL,'+tP+','+tR+','+tL+','+tSL+','+tA+','+tOR);
+
+  // ── SECTION 2: Employee-wise Present List ──
+  lines.push('');
+  lines.push('');
+  lines.push('EMPLOYEE-WISE PRESENT LIST');
+  lines.push('S.NO,EMP ID,NAME,CATEGORY,STATUS');
+
+  // Get present employees from bioRawData for this date
+  var bday=bioRawData[date]||{};
+  var catmap=dsrData.catmap||{};
+  var presentList=[];
+
+  // From bio data
+  var eids=Object.keys(bday);
+  for(var i=0;i<eids.length;i++){
+    var eid=eids[i];
+    var info=bday[eid];
+    if(info.status==='P'||info.code==='P'){
+      var emp=catmap[eid]||catmap[String(eid)];
+      if(emp) presentList.push({eid:eid,name:emp.name,cat:emp.cat});
+    }
+  }
+
+  // If no bio data, show all employees with P from catmap (as fallback)
+  if(presentList.length===0){
+    var allEmps=Object.keys(catmap);
+    for(var i=0;i<allEmps.length;i++){
+      var eid=allEmps[i];
+      presentList.push({eid:eid,name:catmap[eid].name,cat:catmap[eid].cat,note:'Manual'});
+    }
+  }
+
+  // Build roster order index from S.emps
+  var rosterIdx={};
+  for(var ri=0;ri<S.emps.length;ri++) rosterIdx[String(S.emps[ri].i)]=ri;
+
+  // Sort by category order first, then by roster sequence within category
+  presentList.sort(function(a,b){
+    var ci=DSR_CATS.indexOf(a.cat),cj=DSR_CATS.indexOf(b.cat);
+    if(ci!==cj) return (ci<0?999:ci)-(cj<0?999:cj);
+    var ri=rosterIdx[String(a.eid)]!==undefined?rosterIdx[String(a.eid)]:9999;
+    var rj=rosterIdx[String(b.eid)]!==undefined?rosterIdx[String(b.eid)]:9999;
+    return ri-rj;
+  });
+
+  // Group by category with subtotals
+  var curCat='';var sno=1;var catCount=0;
+  for(var i=0;i<presentList.length;i++){
+    var emp=presentList[i];
+    if(emp.cat!==curCat){
+      if(curCat!=='') lines.push(',,'+curCat+' Total: '+catCount+' Present,,');
+      curCat=emp.cat; catCount=0;
+      lines.push('');
+      lines.push(',,['+curCat+'],,');
+    }
+    lines.push(sno+','+emp.eid+','+emp.name+','+emp.cat+',P');
+    sno++; catCount++;
+  }
+  if(curCat!=='' && presentList.length>0) lines.push(',,'+curCat+' Total: '+catCount+' Present,,');
+  lines.push('');
+  lines.push('Total Present,,,,'+presentList.length);
+
+  var csv=lines.join('\n');
+  var blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download='DSR_'+date+'.csv';
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},500);
+  toast('DSR + Employee list downloaded!');
+}
+
+function dsrDownloadExcel(){
+  try{
+    var dateEl=document.getElementById('dsr-date');
+    var date=dateEl?dateEl.value:S.dt;
+    if(!date){alert('Date select karo!');return;}
+    var data=dsrGetEntryData();
+    var cats=Object.keys(data);
+    if(cats.length===0){alert('Koi data nahi hai! Pehle catmap upload karo.');return;}
+    dsrMakeXlsx(date,data);
+  }catch(err){alert('Download error: '+err.message);}
+}
+
+function dsrDownloadDate(date){
+  var data=(dsrData.entries||{})[date];
+  if(!data){toast('Data nahi mila!',false);return;}
+  dsrMakeXlsx(date,data);
+  toast('Downloaded!');
+}
+
+function dsrUploadExcel(input){
+  var file=input.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'binary'});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{header:1});
+      var hIdx=-1,eC=-1,nC=-1,cC=-1;
+      for(var i=0;i<Math.min(5,rows.length);i++){
+        var row=rows[i].map(function(c){return String(c||'').trim().toUpperCase();});
+        var ei=-1,ni=-1,ci=-1;
+        for(var j=0;j<row.length;j++){
+          if(ei<0&&(row[j].indexOf('EMP')>=0||row[j].indexOf('ID')>=0||row[j].indexOf('CODE')>=0)) ei=j;
+          if(ni<0&&row[j].indexOf('NAME')>=0) ni=j;
+          if(ci<0&&(row[j].indexOf('CAT')>=0||row[j].indexOf('DESIG')>=0||row[j].indexOf('DEPT')>=0)) ci=j;
+        }
+        if(ei>=0&&ni>=0&&ci>=0){hIdx=i;eC=ei;nC=ni;cC=ci;break;}
+      }
+      if(hIdx<0){toast('Column nahi mila! EmpID/Name/Category columns chahiye',false);return;}
+      var catmap={};var total=0;
+      for(var i=hIdx+1;i<rows.length;i++){
+        var row=rows[i];
+        var id=String(row[eC]||'').trim();
+        var name=String(row[nC]||'').trim();
+        var cat=String(row[cC]||'').trim().toUpperCase();
+        if(!id||!name||!cat) continue;
+        catmap[id]={name:name,cat:cat};total++;
+      }
+      dsrData.catmap=catmap;
+      dsrSave();
+      toast(total+' employees loaded!');
+      render();
+    }catch(err){toast('Error: '+err.message,false);}
+  };
+  reader.readAsBinaryString(file);
+}
+
+</script></body></html>
