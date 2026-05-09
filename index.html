@@ -14976,60 +14976,57 @@ function dsrMakeXlsx(date,data){
   lines.push('EMPLOYEE-WISE PRESENT LIST');
   lines.push('S.NO,EMP ID,NAME,CATEGORY,STATUS');
 
-  // Get present employees from bioRawData for this date
+  // Bio present lookup from bioRawData for this date
   var bday=bioRawData[date]||{};
   var catmap=dsrData.catmap||{};
-  var presentList=[];
-
-  // From bio data
+  var bioPresent={};
   var eids=Object.keys(bday);
   for(var i=0;i<eids.length;i++){
     var eid=eids[i];
     var info=bday[eid];
-    if(info.status==='P'||info.code==='P'){
-      var emp=catmap[eid]||catmap[String(eid)];
-      if(emp) presentList.push({eid:eid,name:emp.name,cat:emp.cat});
-    }
+    if(info.status==='P'||info.code==='P') bioPresent[String(eid)]=true;
   }
 
-  // If no bio data, show all employees with P from catmap (as fallback)
-  if(presentList.length===0){
-    var allEmps=Object.keys(catmap);
-    for(var i=0;i<allEmps.length;i++){
-      var eid=allEmps[i];
-      presentList.push({eid:eid,name:catmap[eid].name,cat:catmap[eid].cat,note:'Manual'});
-    }
+  // Full employee list from catmap — saare employees, present ho ya na ho
+  var fullList=[];
+  var allEids=Object.keys(catmap);
+  for(var i=0;i<allEids.length;i++){
+    var eid=allEids[i];
+    var emp=catmap[eid];
+    fullList.push({eid:eid,name:emp.name,cat:emp.cat,status:bioPresent[String(eid)]?'P':'A'});
   }
 
-  // Build roster order index from S.emps
+  // Roster order index
   var rosterIdx={};
   for(var ri=0;ri<S.emps.length;ri++) rosterIdx[String(S.emps[ri].i)]=ri;
 
-  // Sort by category order first, then by roster sequence within category
-  presentList.sort(function(a,b){
+  // Sort: category order first, then roster sequence
+  fullList.sort(function(a,b){
     var ci=DSR_CATS.indexOf(a.cat),cj=DSR_CATS.indexOf(b.cat);
     if(ci!==cj) return (ci<0?999:ci)-(cj<0?999:cj);
-    var ri=rosterIdx[String(a.eid)]!==undefined?rosterIdx[String(a.eid)]:9999;
-    var rj=rosterIdx[String(b.eid)]!==undefined?rosterIdx[String(b.eid)]:9999;
-    return ri-rj;
+    var ria=rosterIdx[String(a.eid)]!==undefined?rosterIdx[String(a.eid)]:9999;
+    var rib=rosterIdx[String(b.eid)]!==undefined?rosterIdx[String(b.eid)]:9999;
+    return ria-rib;
   });
 
   // Group by category with subtotals
-  var curCat='';var sno=1;var catCount=0;
-  for(var i=0;i<presentList.length;i++){
-    var emp=presentList[i];
+  var curCat='';var sno=1;
+  var catPresent=0;var catTotal=0;var totalPresent=0;var totalAll=0;
+  for(var i=0;i<fullList.length;i++){
+    var emp=fullList[i];
     if(emp.cat!==curCat){
-      if(curCat!=='') lines.push(',,'+curCat+' Total: '+catCount+' Present,,');
-      curCat=emp.cat; catCount=0;
+      if(curCat!=='') lines.push(',,'+curCat+' — Present: '+catPresent+' / On Roll: '+catTotal+',,');
+      curCat=emp.cat; catPresent=0; catTotal=0;
       lines.push('');
       lines.push(',,['+curCat+'],,');
     }
-    lines.push(sno+','+emp.eid+','+emp.name+','+emp.cat+',P');
-    sno++; catCount++;
+    lines.push(sno+','+emp.eid+','+emp.name+','+emp.cat+','+(emp.status==='P'?'P (Present)':'A (Absent/No Bio)'));
+    sno++; catTotal++; totalAll++;
+    if(emp.status==='P'){catPresent++;totalPresent++;}
   }
-  if(curCat!=='' && presentList.length>0) lines.push(',,'+curCat+' Total: '+catCount+' Present,,');
+  if(curCat!=='') lines.push(',,'+curCat+' — Present: '+catPresent+' / On Roll: '+catTotal+',,');
   lines.push('');
-  lines.push('Total Present,,,,'+presentList.length);
+  lines.push('GRAND TOTAL,,,,Present: '+totalPresent+' / On Roll: '+totalAll);
 
   var csv=lines.join('\n');
   var blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
