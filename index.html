@@ -1518,16 +1518,16 @@ function render(){
           Employee Details <span id="lt-edit-idx" style="display:none"></span>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-          <div><label class="cl" style="font-size:10px">Employee Name</label><input class="inp" id="lt-name" placeholder="e.g. DINESH KUMAR"></div>
-          <div><label class="cl" style="font-size:10px">Father's Name</label><input class="inp" id="lt-father" placeholder="e.g. DHARAM PAL"></div>
-          <div><label class="cl" style="font-size:10px">Employee ID (NEIS No.)</label><input class="inp" id="lt-eid" placeholder="e.g. 58015819"></div>
+          <div><label class="cl" style="font-size:10px">Employee Name</label><input class="inp" id="lt-name" placeholder="e.g. DINESH KUMAR" oninput="this.value=this.value.toUpperCase()"></div>
+          <div><label class="cl" style="font-size:10px">Father's Name</label><input class="inp" id="lt-father" placeholder="e.g. DHARAM PAL" oninput="this.value=this.value.toUpperCase()"></div>
+          <div><label class="cl" style="font-size:10px">Employee ID (NEIS No.)</label><input class="inp" id="lt-eid" placeholder="e.g. 58015819" oninput="this.value=this.value.toUpperCase()"></div>
           <div><label class="cl" style="font-size:10px">VTC Attendance</label><input class="inp" id="lt-vtc" type="number" placeholder="28" value="28"></div>
         </div>
         <div style="font-size:12px;font-weight:700;color:#06b6d4;margin-bottom:6px">Training Periods</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-          <div><label class="cl" style="font-size:10px">Classroom Period</label><input class="inp" id="lt-class" placeholder="31.10.2024 TO 21.11.2024"></div>
-          <div><label class="cl" style="font-size:10px">Job Training Period</label><input class="inp" id="lt-job" placeholder="22.11.2024 TO 25.12.2024"></div>
-          <div><label class="cl" style="font-size:10px">Feedback Period</label><input class="inp" id="lt-feedback" placeholder="26.12.2024 TO 27.12.2024"></div>
+          <div><label class="cl" style="font-size:10px">Classroom Period</label><input class="inp" id="lt-class" placeholder="31.10.2024 TO 21.11.2024" oninput="this.value=this.value.toUpperCase()"></div>
+          <div><label class="cl" style="font-size:10px">Job Training Period</label><input class="inp" id="lt-job" placeholder="22.11.2024 TO 25.12.2024" oninput="this.value=this.value.toUpperCase()"></div>
+          <div><label class="cl" style="font-size:10px">Feedback Period</label><input class="inp" id="lt-feedback" placeholder="26.12.2024 TO 27.12.2024" oninput="this.value=this.value.toUpperCase()"></div>
           <div><label class="cl" style="font-size:10px">Letter Date</label><input class="inp" type="date" id="lt-date" value="${S.dt}"></div>
         </div>
         <div style="font-size:12px;font-weight:700;color:#22c55e;margin-bottom:6px">Month-wise Attendance</div>
@@ -5752,12 +5752,45 @@ function vwRenderBulkPanel(eid){
     else filledDays.push({d,code:row.days[d]});
   }
   
+  // ── CODE SUMMARY for this employee ──
+  var empCodeSums={P:0,U:0,S:0,'O/T':0,WE:0,HD:0,HE:0};
+  for(var sc=1;sc<=dim;sc++){
+    var ec=(row.days[sc]||'').trim().toUpperCase();
+    if(ec==='P'||ec==='P*') empCodeSums.P++;
+    else if(ec==='U'||ec==='U*') empCodeSums.U++;
+    else if(ec==='S'||ec==='S*') empCodeSums.S++;
+    else if(ec==='O/T') empCodeSums['O/T']++;
+    else if(ec==='WE') empCodeSums.WE++;
+    else if(ec==='HD') empCodeSums.HD++;
+    else if(ec==='HE') empCodeSums.HE++;
+  }
+  var sumCfg=[
+    {k:'P',lbl:'Present',cl:'#16a34a'},
+    {k:'U',lbl:'Night',cl:'#818cf8'},
+    {k:'S',lbl:'Sunday',cl:'#a855f7'},
+    {k:'O/T',lbl:'O/T',cl:'#f59e0b'},
+    {k:'WE',lbl:'Week End',cl:'#6366f1'},
+    {k:'HD',lbl:'Holiday',cl:'#f97316'},
+    {k:'HE',lbl:'Hol. Eve',cl:'#8b5cf6'},
+  ];
+  var sumHtml='<div style="display:flex;flex-wrap:wrap;gap:5px;padding:6px 0 8px 0;border-bottom:1px solid rgba(99,102,241,.1);margin-bottom:6px">';
+  sumCfg.forEach(function(sc){
+    var cnt=empCodeSums[sc.k];
+    if(cnt===0)return;
+    sumHtml+='<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:3px 9px;text-align:center">';
+    sumHtml+='<div style="font-size:10px;font-weight:800;color:'+sc.cl+'">'+sc.k+'</div>';
+    sumHtml+='<div style="font-size:13px;font-weight:900;color:'+sc.cl+'">'+cnt+'</div>';
+    sumHtml+='<div style="font-size:7px;color:#4b5563">'+sc.lbl+'</div>';
+    sumHtml+='</div>';
+  });
+  sumHtml+='</div>';
+
   if(!blankDays.length){
-    panel.innerHTML='<div style="padding:8px;color:#22c55e;font-size:11px;font-weight:600">\u2705 No blank dates! All filled. <button class="btn bg2" style="font-size:9px;padding:3px 8px;margin-left:6px" onclick="vwNextEmp()">Next \u25b6</button></div>';
+    panel.innerHTML=sumHtml+'<div style="padding:8px;color:#22c55e;font-size:11px;font-weight:600">\u2705 No blank dates! All filled. <button class="btn bg2" style="font-size:9px;padding:3px 8px;margin-left:6px" onclick="vwNextEmp()">Next \u25b6</button></div>';
     return;
   }
   
-  let h='<div style="margin-top:8px">';
+  let h='<div style="margin-top:8px">'+sumHtml;
   
   // Blank dates with checkboxes
   h+='<div style="font-size:10px;color:#f59e0b;font-weight:600;margin-bottom:4px">Blank Dates ('+blankDays.length+'):</div>';
@@ -14751,8 +14784,11 @@ function dsrRender(){
   h+='<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
   h+='<label style="cursor:pointer"><input type="file" accept=".xlsx,.xls" onchange="dsrUploadExcel(this)" style="display:none"><span class="btn bp" style="font-size:10px;padding:5px 12px;display:inline-block">&#128229; Upload Excel</span></label>';
   if(hasCatmap){
+    h+='<label style="cursor:pointer"><input type="file" accept=".xlsx,.xls" onchange="dsrUploadAttExcel(this)" style="display:none"><span class="btn" style="font-size:10px;padding:5px 12px;display:inline-block;background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3);border-radius:6px">&#128196; Upload Att. &#8594; Report</span></label>';
+  }
+  if(hasCatmap){
     h+='<span style="color:#22c55e;font-size:10px">&#10003; '+Object.keys(dsrData.catmap).length+' employees &middot; '+cats.length+' categories</span>';
-    h+='<button class="btn bg2" style="font-size:9px;padding:3px 8px" onclick="if(confirm(\'Catmap clear karna hai?\')){dsrData.catmap={};dsrSave();render();}">Reset</button>';
+    h+='<button class="btn bg2" style="font-size:9px;padding:3px 8px" onclick="if(confirm(\'Catmap clear karna hai?\')){dsrData.catmap={};dsrData.seqOrder=[];dsrSave();render();}">Reset</button>';
   } else {
     h+='<span style="color:#f59e0b;font-size:10px">Pehle Excel upload karo</span>';
   }
@@ -15057,6 +15093,129 @@ function dsrDownloadDate(date){
   toast('Downloaded!');
 }
 
+// DSR — Upload Attendance Excel (2nd file) → Auto-generate report using catmap sequence
+function dsrUploadAttExcel(input){
+  var file=input.files[0];if(!file)return;
+  if(!dsrData.catmap||Object.keys(dsrData.catmap).length===0){
+    toast('Pehle catmap (Step 1) upload karo!',false);return;
+  }
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'binary'});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''});
+
+      // Detect header row: find EmpID and code columns
+      var hIdx=-1,eC=-1,nC=-1;
+      var dateCols=[];
+      for(var i=0;i<Math.min(6,rows.length);i++){
+        var row=rows[i].map(function(c){return String(c||'').trim().toUpperCase();});
+        var ei=-1,ni=-1;
+        for(var j=0;j<row.length;j++){
+          if(ei<0&&(row[j].indexOf('EMP')>=0||row[j].indexOf('ID')>=0||row[j].indexOf('NEIS')>=0||row[j]==='ID')) ei=j;
+          if(ni<0&&row[j].indexOf('NAME')>=0) ni=j;
+        }
+        if(ei>=0){
+          hIdx=i;eC=ei;nC=(ni>=0?ni:ei+1);
+          // Date columns: numeric headers (1..31)
+          for(var j=0;j<row.length;j++){
+            var v=parseInt(row[j]);
+            if(!isNaN(v)&&v>=1&&v<=31) dateCols.push({col:j,day:v});
+          }
+          break;
+        }
+      }
+      if(hIdx<0){toast('Header nahi mila! EmpID column chahiye.',false);return;}
+      if(dateCols.length===0){toast('Date columns (1-31) nahi mile!',false);return;}
+
+      // Read attendance data: empID → {day: code}
+      var attMap={};
+      for(var i=hIdx+1;i<rows.length;i++){
+        var row=rows[i];
+        var id=String(row[eC]||'').trim();
+        if(!id) continue;
+        attMap[id]={};
+        dateCols.forEach(function(dc){
+          var code=String(row[dc.col]||'').trim().toUpperCase();
+          if(code) attMap[id][dc.day]=code;
+        });
+      }
+
+      // Use seqOrder (first file sequence) or catmap key order
+      var catmap=dsrData.catmap||{};
+      var seq=dsrData.seqOrder&&dsrData.seqOrder.length>0?dsrData.seqOrder:Object.keys(catmap);
+
+      // Count codes per category (per day summed across all days)
+      var catCounts={};
+      var catOrder=[];
+      seq.forEach(function(eid){
+        var emp=catmap[eid];if(!emp)return;
+        var cat=emp.cat;
+        if(!catCounts[cat]){catCounts[cat]={P:0,U:0,S:0,'O/T':0,WE:0,HD:0,HE:0,A:0,total:0};catOrder.push(cat);}
+        var days=attMap[eid]||{};
+        var hasDays=Object.keys(days).length>0;
+        var hasPresent=false;
+        Object.values(days).forEach(function(code){
+          var c=code.toUpperCase();
+          if(c==='P'||c==='P*'){catCounts[cat].P++;hasPresent=true;}
+          else if(c==='U'||c==='U*'){catCounts[cat].U++;hasPresent=true;}
+          else if(c==='S'||c==='S*') catCounts[cat].S++;
+          else if(c==='O/T') catCounts[cat]['O/T']++;
+          else if(c==='WE') catCounts[cat].WE++;
+          else if(c==='HD') catCounts[cat].HD++;
+          else if(c==='HE') catCounts[cat].HE++;
+        });
+        catCounts[cat].total++;
+      });
+
+      // De-dupe catOrder
+      var seenCats={};
+      catOrder=catOrder.filter(function(c){if(seenCats[c])return false;seenCats[c]=true;return true;});
+
+      // Generate CSV report
+      var fname=file.name.replace(/\.xlsx?$/i,'');
+      var lines=[];
+      lines.push('ATTENDANCE SUMMARY REPORT — KATKONA 1&2 INCLINE SECL');
+      lines.push('Source: '+fname);
+      lines.push('Generated: '+new Date().toLocaleDateString('en-IN'));
+      lines.push('');
+      lines.push('CATEGORY,P,U,S,O/T,WE,HD,HE,ON ROLL');
+      var totP=0,totU=0,totS=0,totOT=0,totWE=0,totHD=0,totHE=0,totOR=0;
+      catOrder.forEach(function(cat){
+        var c=catCounts[cat];
+        lines.push(cat+','+c.P+','+c.U+','+c.S+','+c['O/T']+','+c.WE+','+c.HD+','+c.HE+','+c.total);
+        totP+=c.P;totU+=c.U;totS+=c.S;totOT+=c['O/T'];totWE+=c.WE;totHD+=c.HD;totHE+=c.HE;totOR+=c.total;
+      });
+      lines.push('TOTAL,'+totP+','+totU+','+totS+','+totOT+','+totWE+','+totHD+','+totHE+','+totOR);
+
+      // Employee-wise detail — sequence from first file
+      lines.push('');
+      lines.push('');
+      lines.push('EMPLOYEE-WISE DETAIL (Sequence: First File Order)');
+      lines.push('S.NO,EMP ID,NAME,CATEGORY,'+dateCols.map(function(dc){return dc.day;}).join(','));
+      var sno=1;
+      seq.forEach(function(eid){
+        var emp=catmap[eid];if(!emp)return;
+        var days=attMap[eid]||{};
+        var dayVals=dateCols.map(function(dc){return days[dc.day]||'';}).join(',');
+        lines.push(sno+','+eid+','+emp.name+','+emp.cat+','+dayVals);
+        sno++;
+      });
+
+      var csv=lines.join('\n');
+      var blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement('a');
+      a.href=url;a.download='DSR_ATT_REPORT_'+fname+'.csv';
+      document.body.appendChild(a);a.click();
+      setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},500);
+      toast('Report generated & downloaded! ('+seq.length+' employees, '+catOrder.length+' categories)');
+    }catch(err){toast('Error: '+err.message,false);console.error(err);}
+  };
+  reader.readAsBinaryString(file);
+}
+
 function dsrUploadExcel(input){
   var file=input.files[0];if(!file)return;
   var reader=new FileReader();
@@ -15087,6 +15246,8 @@ function dsrUploadExcel(input){
         catmap[id]={name:name,cat:cat};total++;
       }
       dsrData.catmap=catmap;
+      // Save sequence order (order in which employees appeared in Excel)
+      dsrData.seqOrder=Object.keys(catmap);
       dsrSave();
       toast(total+' employees loaded!');
       render();
