@@ -5062,8 +5062,13 @@ function rosterUpload(){
         const eid=String(row['EMPLOYEE ID']||row['Employee ID']||row.EmployeeID||row['Emp ID']||row.employee_id||'').trim();
         const name=String(row['EMPLOYEE NAME']||row['Employee Name']||row.Name||row.name||row.employee_name||'').trim().toUpperCase();
         const pp=String(row['Pay_Point Name']||row['Pay Point']||row.PayPoint||row.pay_point||'').trim();
+        // Read ct (Surface/Underground) if present in Excel
+        const ctRaw=String(row['Surface/UG']||row['Contract']||row['CT']||row['ct']||'').trim();
+        const ct=ctRaw.toLowerCase().startsWith('s')?'S':ctRaw.toLowerCase().startsWith('u')?'U':'';
+        // Read posting if present
+        const posting=String(row['Posting']||row['POSTING']||row['posting']||'').trim();
         if(!eid||!name)return;
-        newEmps.push({s:sn,i:eid,n:name,p:pp});
+        newEmps.push({s:sn,i:eid,n:name,p:pp,_ct:ct,_posting:posting});
       });
       
       if(!newEmps.length){statusEl.innerHTML='<div style="color:#f87171;font-size:11px">No valid employees found in file!</div>';return;}
@@ -5106,8 +5111,26 @@ function rosterUpload(){
       
       if(!confirm(msg))return;
       
-      // Apply: replace roster with new file data
-      S.emps=newEmps;
+      // Apply: MERGE — preserve existing sequence, ct, posting for known employees
+      // Step 1: existing employees in their CURRENT ORDER (preserve sequence)
+      const finalEmps=[];
+      S.emps.forEach(function(emp){
+        if(!newMap[emp.i])return; // removed — skip
+        const newE=newMap[emp.i];
+        finalEmps.push(Object.assign({},emp,{
+          n:newE.n,                                    // update name
+          p:newE.p,                                    // update pay point
+          ct:newE._ct||emp.ct||'U',                   // Excel ct > existing ct > default U
+          posting:newE._posting||emp.posting||''       // Excel posting > existing posting
+        }));
+      });
+      // Step 2: new employees at end
+      newEmps.forEach(function(emp){
+        if(!oldMap[emp.i]){
+          finalEmps.push({s:emp.s,i:emp.i,n:emp.n,p:emp.p,ct:emp._ct||'U',posting:emp._posting||''});
+        }
+      });
+      S.emps=finalEmps;
       saveE();pS('e',S.emps);
       
       statusEl.innerHTML=`<div style="background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.15);border-radius:8px;padding:10px;margin-top:4px">
