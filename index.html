@@ -15153,17 +15153,44 @@ function bioSaveSMSKey(){
   toast('✅ API Key saved!');
 }
 
-function bioGetSMSMsg(bd){
-  const date=bd.date||'';
+function bioGetSMSMsg(bd,eid){
+  const date=bd?bd.date||'':'';
   let dStr=date;
   if(/^\d{4}-\d{2}-\d{2}$/.test(date)){const p=date.split('-');dStr=p[2]+'/'+p[1]+'/'+p[0];}
-  if(bd.status==='short'){
-    return 'SHORT DUTY ALERT: IN '+bd.inT+', OUT '+bd.outT+', Work '+bd.work+'. Date: '+dStr+'. -Katkona 1&2 Incline';
-  }else if(bd.status==='skip'){
-    return 'Biometric: IN marked, OUT not captured. Date: '+dStr+'. -Katkona 1&2 Incline';
-  }else{
-    return 'Biometric attendance marked: IN OK, OUT OK. Date: '+dStr+'. -Katkona 1&2 Incline';
+
+  const HEADER='KATKONA 1&2 INCLINE';
+  const sap=window._sapData&&eid?window._sapData[eid]||{}:{};
+  const code=window._sapCodeData&&eid?window._sapCodeData[eid]||'':'';
+
+  // Code from entry (R, A, CL, SL, OD, EL etc.)
+  if(code){
+    const codeLabels={'R':'R - Vishram','A':'A - Anupasthit','CL':'CL - Aakashmik Avkash','SL':'SL - Bimari Avkash','EL':'EL - Arjit Avkash','OD':'OD - On Duty','WE':'WE - Sapthik Avkash','HD':'HD - Avkash Divas','HE':'HE - Avkash Purv','S':'S - Sunday'};
+    const cLabel=codeLabels[code]||code;
+    return HEADER+'\nDt: '+dStr+'\nCode: '+cLabel;
   }
+
+  // SAP based — ABSENT
+  if(sap.actType==='ABSENT'||bd.status==='skip'){
+    const hasIn=!!(bd&&bd.inT&&bd.inT!=='—');
+    const hasOut=!!(bd&&bd.outT&&bd.outT!=='—');
+    let reason='IN/OUT dono darj nahi';
+    if(hasIn&&!hasOut) reason='IN darj, OUT nahi';
+    else if(!hasIn&&hasOut) reason='OUT darj, IN nahi';
+    return HEADER+'\nDt: '+dStr+'\nIN: '+(bd&&bd.inT||'--')+' OUT: '+(bd&&bd.outT||'--')+'\nStatus: Absent | '+reason;
+  }
+
+  // SAP based — LATE
+  if(sap.actType==='LATE'){
+    return HEADER+'\nDt: '+dStr+'\nIN: '+bd.inT+' OUT: '+(bd.outT||'--')+'\nWork: '+bd.work+'\nStatus: LATE\nSch: '+(sap.schedIn||'?')+'-'+(sap.schedOut||'?');
+  }
+
+  // Short duty
+  if(bd.status==='short'){
+    return HEADER+'\nDt: '+dStr+'\nIN: '+bd.inT+' OUT: '+bd.outT+'\nWork: '+bd.work+'\nSTATUS: SHORT DUTY';
+  }
+
+  // Normal present
+  return HEADER+'\nDt: '+dStr+'\nIN: '+bd.inT+' OUT: '+(bd.outT||'--')+'\nWork: '+bd.work+'\nStatus: Present OK';
 }
 
 function bioToggleSMSSelect(){
@@ -15190,7 +15217,7 @@ function bioRenderSMSSelect(){
     const name=emp.n||eid;
     const desig=emp.d||'';
     const hasPhone=phone.length>=10;
-    rows.push({eid,name,desig,phone,bd,hasPhone,msg:bioGetSMSMsg(bd)});
+    rows.push({eid,name,desig,phone,bd,hasPhone,msg:bioGetSMSMsg(bd,eid)});
   });
   rows.sort(function(a,b){return (b.hasPhone?1:0)-(a.hasPhone?1:0)||(a.name>b.name?1:-1);});
   const statusColors={P:'#16a34a',U:'#f59e0b',short:'#ca8a04',skip:'#f87171'};
@@ -15262,7 +15289,7 @@ function bioUpdateSMSCount(){
 
 async function bioSendAllSMS(){
   const bioData=window._bioData;
-  if(!bioData)return;
+  if(!bioData||!Object.keys(bioData).length){toast('Pehle biometric process karo!',false);return;}
   await bioSendSMSToEids(Object.keys(bioData));
 }
 
@@ -15290,7 +15317,7 @@ function bioPrepareSMSList(eids){
     const phone=rawPhone.replace(/\s/g,'').replace(/[^0-9+]/g,'');
     const num=phone.replace(/[^0-9]/g,'').slice(-10);
     if(!num||num.length<10){noPhone++;return;}
-    list.push({eid,num,msg:bioGetSMSMsg(bd),status:bd.status});
+    list.push({eid,num,msg:bioGetSMSMsg(bd,eid),status:bd.status});
   });
   return{list,noPhone,date};
 }
@@ -15330,10 +15357,20 @@ function bioSMSDebug(){
 
 async function bioSendSMSToEids(eids){
   const apiKey=((document.getElementById('f2s-key')||{}).value||localStorage.getItem('fast2sms_key')||'').trim();
-  if(!apiKey){toast('API Key daalo pehle!',false);return;}
+  if(!apiKey){toast('API Key daalo pehle! Save button dabao.',false);return;}
   const bioData=window._bioData;
-  const statusEl=document.getElementById('sms-send-status');
-  if(!statusEl)return;
+  if(!bioData||!Object.keys(bioData).length){toast('Pehle biometric process karo!',false);return;}
+  let statusEl=document.getElementById('sms-send-status');
+  if(!statusEl){
+    // Create status div if missing
+    const panel=document.getElementById('bio-sms-section');
+    if(panel){
+      statusEl=document.createElement('div');
+      statusEl.id='sms-send-status';
+      statusEl.style.marginTop='10px';
+      panel.appendChild(statusEl);
+    }else{toast('SMS panel nahi mila — Biometric tab pe jao.',false);return;}
+  }
 
   const{list,noPhone,date}=bioPrepareSMSList(eids);
 
@@ -15349,14 +15386,9 @@ async function bioSendSMSToEids(eids){
   // Group: same-msg types batch, short individual
   let dStr=date||'';
   if(/^\d{4}-\d{2}-\d{2}$/.test(dStr)){const p=dStr.split('-');dStr=p[2]+'/'+p[1]+'/'+p[0];}
-  const normalMsg='Biometric attendance marked: IN OK, OUT OK. Date: '+dStr+'. -Katkona 1&2 Incline';
-  const skipMsg='Biometric: IN marked, OUT not captured. Date: '+dStr+'. -Katkona 1&2 Incline';
-  const normalNums=[],skipNums=[],shortItems=[];
-  list.forEach(function(r){
-    if(r.status==='short') shortItems.push({num:r.num,msg:r.msg});
-    else if(r.status==='skip') skipNums.push(r.num);
-    else normalNums.push(r.num);
-  });
+  // Ab har employee ka message alag hai (SAP + code se personalized)
+  // So send individually with throttle
+  const allItems=list.map(function(r){return{num:r.num,msg:r.msg};});
 
   let sent=0,failed=0,errorSet=new Set();
 
@@ -15384,19 +15416,10 @@ async function bioSendSMSToEids(eids){
     errorSet.add('All attempts failed: '+lastErr);
   }
 
-  for(let i=0;i<normalNums.length;i+=300){
-    statusEl.innerHTML='<div style="color:#a5b4fc;font-size:11px">⏳ Normal... '+(i+1)+'/'+normalNums.length+'</div>';
-    await callF2S(normalNums.slice(i,i+300),normalMsg);
-  }
-  for(let i=0;i<skipNums.length;i+=300){
-    statusEl.innerHTML='<div style="color:#a5b4fc;font-size:11px">⏳ Skipped... '+(i+1)+'/'+skipNums.length+'</div>';
-    await callF2S(skipNums.slice(i,i+300),skipMsg);
-  }
-  // Short: individual with throttle
-  for(let i=0;i<shortItems.length;i++){
-    statusEl.innerHTML='<div style="color:#a5b4fc;font-size:11px">⏳ Sending short duty '+(i+1)+'/'+shortItems.length+'...</div>';
-    await callF2S([shortItems[i].num],shortItems[i].msg);
-    if(i%5===4) await new Promise(function(r){setTimeout(r,600);});
+  for(let i=0;i<allItems.length;i++){
+    statusEl.innerHTML='<div style="color:#a5b4fc;font-size:11px">⏳ Sending '+(i+1)+'/'+allItems.length+'...</div>';
+    await callF2S([allItems[i].num],allItems[i].msg);
+    if(i%5===4) await new Promise(function(r){setTimeout(r,500);});
   }
 
   const ok=sent>0&&!failed;
@@ -15422,8 +15445,66 @@ async function bioSendSMSToEids(eids){
     </div>`:''}
   </div>`;
   toast(sent>0?sent+' SMS bheje!':'SMS send nahi hua — error dekho',sent>0);
+  // Save log for PDF
+  window._smsSentLog={date:new Date().toLocaleString('en-IN'),bioDate:date||'',total:list.length,sent:sent,failed:failed,noPhone:noPhone,
+    entries:list.map(function(r){var emp=S.emps.find(function(e){return e.i===r.eid;})||{};return{eid:r.eid,name:emp.n||r.eid,phone:r.num,msg:r.msg,status:r.status};})};
+  if(sent>0){
+    var pdfBtn=document.createElement('div');
+    pdfBtn.style.marginTop='10px';
+    pdfBtn.innerHTML='<button class="btn bp" style="font-size:11px;background:linear-gradient(135deg,#dc2626,#ef4444)" onclick="smsPDFRecord()">📄 PDF Record Download</button>';
+    var se=document.getElementById('sms-send-status');
+    if(se)se.appendChild(pdfBtn);
+  }
 }
 // ─────────────────────────────────────────────────────────────────
+
+function smsPDFRecord(){
+  var log=window._smsSentLog;
+  if(!log){toast('Pehle SMS bhejo!',false);return;}
+  var rows=log.entries.map(function(e,i){
+    return '<tr style="background:'+(i%2===0?'#fff':'#f8f9fa')+'">'
+      +'<td style="padding:4px 8px;border:1px solid #ddd;text-align:center">'+(i+1)+'</td>'
+      +'<td style="padding:4px 8px;border:1px solid #ddd">'+e.name+'</td>'
+      +'<td style="padding:4px 8px;border:1px solid #ddd;text-align:center">'+e.eid+'</td>'
+      +'<td style="padding:4px 8px;border:1px solid #ddd;text-align:center">'+e.phone+'</td>'
+      +'<td style="padding:4px 8px;border:1px solid #ddd;font-size:11px">'+e.msg.replace(/\n/g,'<br>')+'</td>'
+      +'</tr>';
+  }).join('');
+  var bioDate=log.bioDate||'';
+  if(/^\d{4}-\d{2}-\d{2}$/.test(bioDate)){var p=bioDate.split('-');bioDate=p[2]+'/'+p[1]+'/'+p[0];}
+  var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>SMS Record</title>'
+    +'<style>body{font-family:Arial,sans-serif;margin:20px;font-size:12px}'
+    +'.hdr{text-align:center;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:12px}'
+    +'.hdr h2{margin:0;font-size:16px;text-transform:uppercase}'
+    +'.hdr h3{margin:4px 0;font-size:13px}'
+    +'.hdr p{margin:2px 0;font-size:11px}'
+    +'.sum{background:#eef2f7;padding:8px 12px;border-radius:4px;margin-bottom:12px;font-size:11px}'
+    +'table{width:100%;border-collapse:collapse;font-size:11px}'
+    +'th{background:#1e3a5f;color:#fff;padding:6px 8px;border:1px solid #ccc;text-align:center}'
+    +'.ftr{margin-top:16px;text-align:right;font-size:10px;color:#666}'
+    +'@media print{.nobtn{display:none}}</style></head><body>'
+    +'<div class="hdr"><h2>South Eastern Coalfields Limited</h2>'
+    +'<h3>Katkona 1&2 Incline, Katkona Sub Area, BAIKUNTHPUR AREA</h3>'
+    +'<p><b>SMS Notification Record</b> &nbsp;|&nbsp; Attendance Date: <b>'+bioDate+'</b></p></div>'
+    +'<div class="sum"><b>Sent On:</b> '+log.date
+    +' &nbsp;|&nbsp; <b>Total Employees:</b> '+log.total
+    +' &nbsp;|&nbsp; <b style="color:green">SMS Sent: '+log.sent+'</b>'
+    +' &nbsp;|&nbsp; <b style="color:red">Failed: '+log.failed+'</b>'
+    +' &nbsp;|&nbsp; No Phone: '+log.noPhone+'</div>'
+    +'<table><thead><tr>'
+    +'<th style="width:35px">SN</th>'
+    +'<th style="text-align:left">Employee Name</th>'
+    +'<th style="width:85px">Emp ID</th>'
+    +'<th style="width:95px">Mobile No.</th>'
+    +'<th style="text-align:left">Message Sent</th>'
+    +'</tr></thead><tbody>'+rows+'</tbody></table>'
+    +'<div class="ftr">Attendance Manager | Katkona 1&2 Incline<br>Printed: '+new Date().toLocaleString('en-IN')+'</div>'
+    +'<br><button class="nobtn" onclick="window.print()" style="padding:8px 20px;background:#1e3a5f;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px">Print / Save as PDF</button>'
+    +'</body></html>';
+  var w=window.open('','_blank');
+  if(w){w.document.write(html);w.document.close();setTimeout(function(){w.print();},600);}
+  else toast('Popup blocked! Browser mein popup allow karo.',false);
+}
 
 // ─── SAP BIOMETRIC MERGE ─────────────────────────────────────────
 function sapInitSection(){
@@ -15544,7 +15625,9 @@ function sapShowMerge(){
       </select>
       <input class="inp" id="sap-search" style="max-width:150px;font-size:10px" placeholder="Search name/ID..." oninput="sapFilterTable()">
       <button class="btn bp" style="font-size:10px;background:linear-gradient(135deg,#059669,#10b981)" onclick="sapDownload()">⬇ Excel</button>
+      <button class="btn bp" style="font-size:10px;background:linear-gradient(135deg,#7c3aed,#a855f7)" onclick="sapSendSMSPanel()">📱 Send SMS</button>
     </div>
+    <div id="sap-sms-panel" style="margin:0 14px 10px;display:none"></div>
     <div style="overflow-x:auto;max-height:55vh;overflow-y:auto">
     <table class="tbl"><thead><tr>
       <th class="sk" style="text-align:left">Name</th>
