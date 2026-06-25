@@ -5825,9 +5825,10 @@ function vwRenderBulkPanel(eid){
   if(lastEmpLog.length){
     var last=lastEmpLog[0];
     var lastDay=last.days&&last.days[0]?last.days[0]:'?';
+    var lastIdx=vwLog.indexOf(last);
     h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding:6px 8px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.15);border-radius:6px">'
-      +'<span style="font-size:10px;color:#94a3b8">Last: Day <b style="color:#f59e0b">'+lastDay+'</b> → <b style="color:#f59e0b">'+last.code+'</b></span>'
-      +'<button onclick="vwUndo('+JSON.stringify(last)+',\''+eid+'\')" class="btn" style="font-size:10px;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);padding:3px 10px;border-radius:4px">↩ Undo</button>'
+      +'<span style="font-size:10px;color:#94a3b8">Last: Day <b style="color:#f59e0b">'+lastDay+'</b> \u2192 <b style="color:#f59e0b">'+last.code+'</b></span>'
+      +'<button onclick="vwUndoByIdx('+lastIdx+',\''+eid+'\')" class="btn" style="font-size:10px;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);padding:3px 10px;border-radius:4px">\u21a9 Undo</button>'
       +'</div>';
   }
   
@@ -6067,6 +6068,12 @@ function vwUpdateKbDisplay() {
   }
 }
 
+
+function vwUndoByIdx(idx,eid){
+  const logEntry=vwLog[idx];
+  if(!logEntry){toast('Log entry nahi mila!',false);return;}
+  vwUndo(logEntry,eid);
+}
 
 function vwUndo(logEntry, eid) {
   if (!vwData || !logEntry) return;
