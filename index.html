@@ -5803,6 +5803,33 @@ function vwRenderBulkPanel(eid){
   }
   
   let h='<div style="margin-top:8px">';
+
+  // Code totals for this employee
+  const codeCounts={};
+  filledDays.forEach(function(fd){codeCounts[fd.code]=(codeCounts[fd.code]||0)+1;});
+  const showCodes=['P','U','S','WE','O/T','HD','HE','CL','SL','EL','OD','R','A'];
+  const codeClrMap={'P':'#16a34a','U':'#f59e0b','S':'#a855f7','WE':'#6366f1','O/T':'#f59e0b','HD':'#f97316','HE':'#8b5cf6','CL':'#3b82f6','SL':'#ec4899','EL':'#14b8a6','OD':'#0ea5e9','R':'#64748b','A':'#ef4444'};
+  h+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">';
+  showCodes.forEach(function(c){
+    const cnt=codeCounts[c]||0;
+    if(!cnt)return;
+    h+='<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:5px;padding:2px 8px;text-align:center">'
+      +'<div style="font-size:9px;font-weight:700;color:'+(codeClrMap[c]||'#94a3b8')+'">'+c+'</div>'
+      +'<div style="font-size:12px;font-weight:800;color:'+(codeClrMap[c]||'#94a3b8')+'">'+cnt+'</div>'
+      +'</div>';
+  });
+  h+='</div>';
+
+  // Undo last action button (prominent)
+  var lastEmpLog=vwLog.filter(function(l){return l.eid===eid;});
+  if(lastEmpLog.length){
+    var last=lastEmpLog[0];
+    var lastDay=last.days&&last.days[0]?last.days[0]:'?';
+    h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding:6px 8px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.15);border-radius:6px">'
+      +'<span style="font-size:10px;color:#94a3b8">Last: Day <b style="color:#f59e0b">'+lastDay+'</b> → <b style="color:#f59e0b">'+last.code+'</b></span>'
+      +'<button onclick="vwUndo('+JSON.stringify(last)+',\''+eid+'\')" class="btn" style="font-size:10px;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);padding:3px 10px;border-radius:4px">↩ Undo</button>'
+      +'</div>';
+  }
   
   // Blank dates with checkboxes
   h+='<div style="font-size:10px;color:#f59e0b;font-weight:600;margin-bottom:4px">Blank Dates ('+blankDays.length+'):</div>';
