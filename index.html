@@ -4629,7 +4629,9 @@ async function bioProcess(){
         <button class="btn bp" style="font-size:11px;padding:6px 14px" onclick="bioDownloadRoster('all')">Download All</button>
         <select class="inp" id="bio-pp-dl" style="max-width:140px;font-size:11px">${ppOpts}</select>
         <button class="btn bp" style="font-size:11px;padding:6px 14px;background:linear-gradient(135deg,#0d9488,#14b8a6)" onclick="bioDownloadRoster(document.getElementById('bio-pp-dl').value)">Download Pay Point</button>
-      </div>`;
+        <button class="btn bp" style="font-size:11px;padding:6px 14px;background:linear-gradient(135deg,#16a34a,#22c55e)" onclick="clerkWAPanel()">📱 Send to Clerks</button>
+      </div>
+      <div id="clerk-wa-panel" style="display:none;margin-top:8px"></div>`;
     }
     
     // Show filterable detail
@@ -4661,6 +4663,114 @@ async function bioProcess(){
     statusEl.innerHTML='<div class="cd" style="padding:14px;color:#f87171">Error: '+err.message+'</div>';
   }
 }
+
+// ─── CLERK WHATSAPP SETUP ────────────────────────────────────────
+const CLERK_PPS=['8L0912AG','8L0912BG','8L0912CG','8L0912GS','8L0912GU','8L0912SG','8L0934NE','8L09SAMD','8L09SAMG'];
+
+function clerkGetData(){
+  try{return JSON.parse(localStorage.getItem('clerk_wa_data')||'{}');}catch{return{};}
+}
+function clerkSaveData(d){localStorage.setItem('clerk_wa_data',JSON.stringify(d));}
+
+function clerkWAPanel(){
+  const panel=document.getElementById('clerk-wa-panel');
+  if(!panel)return;
+  if(panel.style.display!=='none'){panel.style.display='none';return;}
+  panel.style.display='block';
+  clerkRenderPanel();
+}
+
+function clerkRenderPanel(){
+  const panel=document.getElementById('clerk-wa-panel');
+  if(!panel)return;
+  const data=clerkGetData();
+  // Get pay points from loaded roster
+  const ppSet=new Set();
+  S.emps.forEach(function(e){if(e.p)ppSet.add(e.p);});
+  const pps=[...ppSet].sort();
+
+  let h=`<div class="cd"><div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04);display:flex;justify-content:space-between;align-items:center">
+    <div style="font-size:12px;font-weight:700;color:#22c55e">📱 Clerk WhatsApp Setup</div>
+    <button class="btn bg2" style="font-size:9px;padding:3px 8px" onclick="clerkSaveAll()">💾 Save All</button>
+  </div>
+  <div style="padding:10px 14px">
+    <div style="font-size:9px;color:#4b5563;margin-bottom:10px">Har pay point ka clerk name aur WhatsApp number daalo — ek baar save karo, hamesha ke liye save rahega.</div>
+    <div style="display:flex;flex-direction:column;gap:6px" id="clerk-rows">`;
+
+  pps.forEach(function(pp){
+    const d=data[pp]||{name:'',num:''};
+    h+=`<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;background:rgba(255,255,255,.03);padding:6px 8px;border-radius:6px">
+      <span style="font-size:10px;font-weight:700;color:#a5b4fc;min-width:80px">${pp}</span>
+      <input class="inp" id="clerk-name-${pp}" placeholder="Clerk Name" value="${d.name}" style="flex:1;font-size:10px;min-width:100px">
+      <input class="inp" id="clerk-num-${pp}" placeholder="WhatsApp No (10 digit)" value="${d.num}" style="flex:1;font-size:10px;min-width:110px" maxlength="10" type="tel">
+    </div>`;
+  });
+
+  h+=`</div></div>
+  <div style="padding:10px 14px;border-top:1px solid rgba(255,255,255,.04)">
+    <div style="font-size:11px;font-weight:700;color:#22c55e;margin-bottom:8px">📤 Send Excel via WhatsApp</div>
+    <div style="font-size:9px;color:#4b5563;margin-bottom:8px">Excel download hogi + WhatsApp khulega clerk ke number pe pre-filled message ke saath. File manually attach karo (2 sec).</div>
+    <div style="display:flex;flex-direction:column;gap:5px">`;
+
+  pps.forEach(function(pp){
+    const d=data[pp]||{name:'',num:''};
+    const empCount=S.emps.filter(function(e){return e.p===pp;}).length;
+    const hasNum=d.num&&d.num.length>=10;
+    h+=`<div style="display:flex;gap:6px;align-items:center;background:rgba(255,255,255,.02);padding:5px 8px;border-radius:5px">
+      <span style="font-size:10px;color:#94a3b8;flex:1">${pp} <span style="color:#4b5563">(${empCount} emp)</span>${d.name?'<br><span style="font-size:9px;color:#818cf8">'+d.name+'</span>':''}</span>
+      <button class="btn bp" style="font-size:10px;padding:4px 8px;background:linear-gradient(135deg,#0d9488,#14b8a6)" onclick="clerkDownloadPP('${pp}')">📥 Excel</button>
+      <button class="btn bp" style="font-size:10px;padding:4px 8px;background:linear-gradient(135deg,#16a34a,#25d366);${hasNum?'':'opacity:.4;cursor:not-allowed'}" ${hasNum?`onclick="clerkSendWA('${pp}')"`:''} title="${hasNum?'WhatsApp pe bhejo':'Number add karo pehle'}">💬 WA</button>
+    </div>`;
+  });
+
+  h+=`</div></div></div>`;
+  panel.innerHTML=h;
+}
+
+function clerkSaveAll(){
+  const data=clerkGetData();
+  const ppSet=new Set();S.emps.forEach(function(e){if(e.p)ppSet.add(e.p);});
+  [...ppSet].forEach(function(pp){
+    const nameEl=document.getElementById('clerk-name-'+pp);
+    const numEl=document.getElementById('clerk-num-'+pp);
+    if(nameEl||numEl){
+      data[pp]={name:(nameEl?nameEl.value:'').trim(),num:(numEl?numEl.value.replace(/\D/g,'').slice(-10):'')};
+    }
+  });
+  clerkSaveData(data);
+  toast('Clerk data saved!');
+  clerkRenderPanel();
+}
+
+function clerkDownloadPP(pp){
+  bioDownloadRoster(pp);
+}
+
+function clerkSendWA(pp){
+  const data=clerkGetData();
+  const d=data[pp]||{};
+  const num=d.num;
+  if(!num||num.length<10){toast('Pehle number save karo!',false);return;}
+  // Get date
+  const bioData=window._bioData||{};
+  const firstEid=Object.keys(bioData)[0];
+  const date=firstEid?bioData[firstEid].date||'':'';
+  let dStr=date;
+  if(/^\d{4}-\d{2}-\d{2}$/.test(date)){const p=date.split('-');dStr=p[2]+'/'+p[1]+'/'+p[0];}
+  const empCount=S.emps.filter(function(e){return e.p===pp;}).length;
+  const msg='Katkona 1%262 Incline%0A'
+    +'Pay Point: '+pp+'%0A'
+    +'Date: '+dStr+'%0A'
+    +'Employees: '+empCount+'%0A'
+    +'Biometric attendance Excel file attached karo.%0A'
+    +'-Attendance Section';
+  const waUrl='https://wa.me/91'+num+'?text='+msg;
+  // Download Excel first
+  bioDownloadRoster(pp);
+  // Open WhatsApp after small delay
+  setTimeout(function(){window.open(waUrl,'_blank');},800);
+}
+// ─────────────────────────────────────────────────────────────────
 
 function bioDownloadRoster(ppFilter){
   const bioData=window._bioData;
@@ -5833,7 +5943,11 @@ function vwRenderBulkPanel(eid){
   }
   
   // Blank dates with checkboxes
-  h+='<div style="font-size:10px;color:#f59e0b;font-weight:600;margin-bottom:4px">Blank Dates ('+blankDays.length+'):</div>';
+  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
+  h+='<div style="font-size:10px;color:#f59e0b;font-weight:600">Blank Dates ('+blankDays.length+'):</div>';
+  h+='<button id="voice-btn-'+eid+'" onclick="vwVoiceStart(\''+eid+'\')" style="background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;border-radius:20px;padding:4px 10px;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;gap:4px">🎤 Bolo</button>';
+  h+='</div>';
+  h+='<div id="voice-status-'+eid+'" style="font-size:10px;color:#818cf8;min-height:14px;margin-bottom:4px"></div>';
   h+='<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:6px">';
   h+='<button style="background:none;border:none;color:#818cf8;font-size:8px;cursor:pointer;text-decoration:underline;padding:0;margin-right:4px" onclick="vwCheckAllBlanks('+JSON.stringify(blankDays)+')">All</button>';
   h+='<button style="background:none;border:none;color:#818cf8;font-size:8px;cursor:pointer;text-decoration:underline;padding:0;margin-right:6px" onclick="vwUncheckAllBlanks()">None</button>';
@@ -6068,6 +6182,150 @@ function vwUpdateKbDisplay() {
   }
 }
 
+
+// ─── VOICE INPUT FOR BULK LEAVE ──────────────────────────────────
+var _voiceRecognition=null;
+
+function vwVoiceStart(eid){
+  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){
+    toast('Browser voice support nahi hai! Chrome use karo.',false);return;
+  }
+  const btn=document.getElementById('voice-btn-'+eid);
+  const statusEl=document.getElementById('voice-status-'+eid);
+
+  // Stop if already running
+  if(_voiceRecognition){_voiceRecognition.stop();_voiceRecognition=null;return;}
+
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const r=new SR();
+  r.lang='hi-IN';
+  r.continuous=false;
+  r.interimResults=true;
+  _voiceRecognition=r;
+
+  if(btn){btn.style.background='linear-gradient(135deg,#dc2626,#ef4444)';btn.textContent='🔴 Sun raha...';}
+
+  r.onresult=function(e){
+    var transcript='';
+    for(var i=0;i<e.results.length;i++) transcript+=e.results[i][0].transcript;
+    if(statusEl)statusEl.textContent='🎤 Suna: "'+transcript+'"';
+    if(e.results[e.results.length-1].isFinal){
+      vwVoiceParse(transcript.toLowerCase().trim(),eid);
+    }
+  };
+
+  r.onerror=function(e){
+    if(statusEl)statusEl.textContent='Error: '+e.error;
+    vwVoiceReset(eid);
+  };
+
+  r.onend=function(){vwVoiceReset(eid);};
+  r.start();
+}
+
+function vwVoiceReset(eid){
+  _voiceRecognition=null;
+  const btn=document.getElementById('voice-btn-'+eid);
+  if(btn){btn.style.background='linear-gradient(135deg,#7c3aed,#a855f7)';btn.textContent='🎤 Bolo';}
+}
+
+function vwVoiceParse(text,eid){
+  const statusEl=document.getElementById('voice-status-'+eid);
+
+  // Code map — Hindi + English variants
+  const codeMap={
+    'rest':'R','r':'R','aar':'R','vishram':'R',
+    'cl':'CL','casual':'CL','aakashmik':'CL','kashmik':'CL',
+    'sl':'SL','sick':'SL','bimari':'SL','medical':'SL',
+    'el':'EL','earned':'EL','arjit':'EL',
+    'od':'OD','on duty':'OD','duty':'OD','ड्यूटी':'OD',
+    'p':'P','present':'P','present':'P','upasthit':'P','hazir':'P',
+    'u':'U','night':'U','raat':'U',
+    'we':'WE','weekly':'WE','hafta':'WE',
+    'hd':'HD','holiday':'HD','avkash':'HD','chutti':'HD','chhutti':'HD',
+    'a':'A','absent':'A','anupasthit':'A',
+    'leave':'CL','lvl':'EL'
+  };
+
+  // Hindi number map
+  const hindiNums={'ek':1,'do':2,'teen':3,'tin':3,'char':4,'paanch':5,'chhe':6,'saat':7,'aath':8,'nau':9,'das':10,
+    'gyarah':11,'barah':12,'terah':13,'chaudah':14,'pandrah':15,'solah':16,'satrah':17,'atharah':18,
+    'unnees':19,'bees':20,'ikkis':21,'bais':22,'teis':23,'chaubis':24,'pachchis':25,'chhabbis':26,
+    'sattaees':27,'athaees':28,'untees':29,'tees':30,'ikattis':31};
+
+  // Extract code
+  let detectedCode=null;
+  for(const [key,val] of Object.entries(codeMap)){
+    if(text.includes(key)){detectedCode=val;break;}
+  }
+
+  if(!detectedCode){
+    if(statusEl)statusEl.innerHTML='<span style="color:#f87171">Code nahi samjha! Dobara bolo (jaise "5 ka rest")</span>';
+    return;
+  }
+
+  // Extract dates
+  // Convert Hindi numbers to digits
+  let processed=text;
+  for(const [hin,num] of Object.entries(hindiNums)){
+    processed=processed.replace(new RegExp('\\b'+hin+'\\b','g'),String(num));
+  }
+
+  const days=[];
+
+  // Pattern: "X se Y ka" → range
+  const rangeMatch=processed.match(/(\d+)\s*se\s*(\d+)/);
+  if(rangeMatch){
+    const from=parseInt(rangeMatch[1]),to=parseInt(rangeMatch[2]);
+    for(let i=from;i<=to;i++) days.push(i);
+  }
+
+  // Pattern: "saare blank" → all blanks
+  if(text.includes('saare')||text.includes('sab')||text.includes('सारे')||text.includes('सब')){
+    const row=vwData.rows.find(function(r){return r.eid===eid;});
+    if(row){for(let d=1;d<=vwData.dim;d++){if(!row.days[d])days.push(d);}}
+  }
+
+  // Pattern: individual numbers "5 aur 10 ka" or "5, 10, 15 ka"
+  if(!days.length){
+    const nums=processed.match(/\d+/g);
+    if(nums) nums.forEach(function(n){const d=parseInt(n);if(d>=1&&d<=31)days.push(d);});
+  }
+
+  if(!days.length){
+    if(statusEl)statusEl.innerHTML='<span style="color:#f87171">Date nahi samjhi! Bolo jaise "5 ka rest" ya "10 se 15 ka CL"</span>';
+    return;
+  }
+
+  // Apply codes
+  const row=vwData.rows.find(function(r){return r.eid===eid;});
+  if(!row){return;}
+  const applied=[];
+  const blankDays=[];
+  for(let d=1;d<=vwData.dim;d++){if(!row.days[d])blankDays.push(d);}
+
+  days.forEach(function(d){
+    if(d>=1&&d<=vwData.dim&&!row.days[d]){
+      row.days[d]=detectedCode;
+      applied.push(d);
+    }
+  });
+
+  if(!applied.length){
+    if(statusEl)statusEl.innerHTML='<span style="color:#f87171">Date already filled hai ya range mein nahi!</span>';
+    return;
+  }
+
+  // Log for undo
+  vwLog.unshift({eid,code:detectedCode,days:applied,dateTime:Date.now()});
+  LS.s('vwlog',vwLog);
+
+  if(statusEl)statusEl.innerHTML='<span style="color:#16a34a">✅ Day '+applied.join(', ')+' → <b>'+detectedCode+'</b> applied!</span>';
+  toast('🎤 '+applied.length+' din → '+detectedCode);
+
+  setTimeout(function(){vwRenderBulkPanel(eid);vwRender();},400);
+}
+// ─────────────────────────────────────────────────────────────────
 
 function vwUndoByIdx(idx,eid){
   const logEntry=vwLog[idx];
