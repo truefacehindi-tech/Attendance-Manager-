@@ -6219,9 +6219,21 @@ function vwVoiceStart(eid){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   const r=new SR();
   r.lang='en-IN';
-  r.continuous=true;   // ← Lagatar sunta rahega
+  r.continuous=true;
   r.interimResults=true;
   _voiceRecognition=r;
+
+  // Mic sound mute karne ka trick — silent audio context
+  try{
+    var ctx=new (window.AudioContext||window.webkitAudioContext)();
+    var osc=ctx.createOscillator();
+    var gain=ctx.createGain();
+    gain.gain.value=0; // volume = 0 (mute)
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    setTimeout(function(){osc.stop();ctx.close();},200);
+  }catch(e){}
 
   if(btn){btn.style.background='linear-gradient(135deg,#dc2626,#ef4444)';btn.innerHTML='🔴 Roko';}
   if(statusEl)statusEl.innerHTML='<span style="color:#22c55e">🎤 Bol raha hoon... (Roko dabao band karne ke liye)</span>';
@@ -6355,11 +6367,18 @@ function vwVoiceParse(text,eid){
     days.push(...nums);
   }
 
-  // No code but days found → show which codes available
+  // No code but days found → select those dates in checkboxes
   if(!detectedCode){
-    const heard='Suna: "'+text+'" — Code nahi samjha!<br>Bolo: "'+
-      (days.length?days[0]+' ':'')+' rest / CL / SL / EL / P / OD"';
-    if(statusEl)statusEl.innerHTML='<span style="color:#f87171">'+heard+'</span>';
+    if(days.length){
+      // Select these dates in the checkbox panel
+      days.forEach(function(d){
+        if(d>=1&&d<=vwData.dim&&!row.days[d]) vwBlankChecked.add(d);
+      });
+      vwRenderBulkPanel(eid);
+      if(statusEl)statusEl.innerHTML='<span style="color:#f59e0b">📅 Day '+days.join(', ')+' selected — neeche code tap karo!</span>';
+    } else {
+      if(statusEl)statusEl.innerHTML='<span style="color:#f87171">Samjha nahi — bolo jaise "5 rest" ya "12 se 15 CL"</span>';
+    }
     return;
   }
 
