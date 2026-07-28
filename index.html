@@ -6189,6 +6189,7 @@ function vwUpdateKbDisplay() {
 
 // ─── VOICE INPUT FOR BULK LEAVE ──────────────────────────────────
 var _voiceRecognition=null;
+var _voiceEid=null;
 
 function vwVoiceTextSubmit(eid){
   var el=document.getElementById('voice-text-'+eid);
@@ -6205,43 +6206,62 @@ function vwVoiceStart(eid){
   const statusEl=document.getElementById('voice-status-'+eid);
 
   // Stop if already running
-  if(_voiceRecognition){_voiceRecognition.stop();_voiceRecognition=null;return;}
+  if(_voiceRecognition){
+    _voiceRecognition.stop();
+    _voiceRecognition=null;
+    _voiceEid=null;
+    if(btn){btn.style.background='linear-gradient(135deg,#7c3aed,#a855f7)';btn.innerHTML='🎤 Bolo';}
+    if(statusEl)statusEl.innerHTML='<span style="color:#64748b">Mic band kiya.</span>';
+    return;
+  }
 
+  _voiceEid=eid;
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   const r=new SR();
   r.lang='en-IN';
-  r.continuous=false;
+  r.continuous=true;   // ← Lagatar sunta rahega
   r.interimResults=true;
   _voiceRecognition=r;
 
-  if(btn){btn.style.background='linear-gradient(135deg,#dc2626,#ef4444)';btn.textContent='🔴 Sun raha...';}
+  if(btn){btn.style.background='linear-gradient(135deg,#dc2626,#ef4444)';btn.innerHTML='🔴 Roko';}
+  if(statusEl)statusEl.innerHTML='<span style="color:#22c55e">🎤 Bol raha hoon... (Roko dabao band karne ke liye)</span>';
 
   r.onresult=function(e){
-    var transcript='';
-    for(var i=0;i<e.results.length;i++) transcript+=e.results[i][0].transcript;
-    // Show in text box too
-    var txtEl=document.getElementById('voice-text-'+eid);
-    if(txtEl)txtEl.value=transcript;
-    if(statusEl)statusEl.textContent='🎤 Suna: "'+transcript+'"';
-    if(e.results[e.results.length-1].isFinal){
-      vwVoiceParse(transcript.toLowerCase().trim(),eid);
+    // Only process final results
+    for(var i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal){
+        var transcript=e.results[i][0].transcript;
+        var txtEl=document.getElementById('voice-text-'+eid);
+        if(txtEl)txtEl.value=transcript;
+        if(statusEl)statusEl.innerHTML='<span style="color:#818cf8">🎤 "'+transcript+'"</span>';
+        vwVoiceParse(transcript.toLowerCase().trim(),eid);
+      }
     }
   };
 
   r.onerror=function(e){
-    var msg=e.error==='network'?'Network error — neeche box mein type karo!':e.error==='not-allowed'?'Mic permission do!':e.error;
+    if(e.error==='no-speech')return; // Ignore silence — continuous mode mein normal hai
+    var msg=e.error==='network'?'Network error — box mein type karo':
+            e.error==='not-allowed'?'Mic permission do!':e.error;
     if(statusEl)statusEl.innerHTML='<span style="color:#f87171">'+msg+'</span>';
-    vwVoiceReset(eid);
+    if(e.error!=='no-speech'&&e.error!=='aborted'){vwVoiceReset(eid);}
   };
 
-  r.onend=function(){vwVoiceReset(eid);};
+  r.onend=function(){
+    // Auto-restart agar abhi bhi chalu hai (Chrome mein continuous mode timeout hota hai)
+    if(_voiceRecognition){
+      try{_voiceRecognition.start();}catch(err){}
+    }
+  };
+
   r.start();
 }
 
 function vwVoiceReset(eid){
   _voiceRecognition=null;
-  const btn=document.getElementById('voice-btn-'+eid);
-  if(btn){btn.style.background='linear-gradient(135deg,#7c3aed,#a855f7)';btn.textContent='🎤 Bolo';}
+  _voiceEid=null;
+  const btn=document.getElementById('voice-btn-'+(eid||''));
+  if(btn){btn.style.background='linear-gradient(135deg,#7c3aed,#a855f7)';btn.innerHTML='🎤 Bolo';}
 }
 
 function vwVoiceParse(text,eid){
