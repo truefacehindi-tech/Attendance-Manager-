@@ -5943,9 +5943,13 @@ function vwRenderBulkPanel(eid){
   }
   
   // Blank dates with checkboxes
-  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
+  h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">';
   h+='<div style="font-size:10px;color:#f59e0b;font-weight:600">Blank Dates ('+blankDays.length+'):</div>';
-  h+='<button id="voice-btn-'+eid+'" onclick="vwVoiceStart(\''+eid+'\')" style="background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;border-radius:20px;padding:4px 10px;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;gap:4px">🎤 Bolo</button>';
+  h+='<button id="voice-btn-'+eid+'" onclick="vwVoiceStart(\''+eid+'\')" style="background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;border-radius:20px;padding:4px 10px;color:#fff;font-size:10px;cursor:pointer">🎤 Bolo</button>';
+  h+='</div>';
+  h+='<div style="display:flex;gap:4px;margin-bottom:4px">';
+  h+='<input id="voice-text-'+eid+'" class="inp" placeholder=\'Type karo: "5 ka rest" ya "10 se 15 ka CL"\' style="flex:1;font-size:10px" onkeydown="if(event.key===\'Enter\')vwVoiceTextSubmit(\''+eid+'\')">';
+  h+='<button onclick="vwVoiceTextSubmit(\''+eid+'\')" style="background:linear-gradient(135deg,#0d9488,#14b8a6);border:none;border-radius:6px;padding:4px 10px;color:#fff;font-size:10px;cursor:pointer">✓</button>';
   h+='</div>';
   h+='<div id="voice-status-'+eid+'" style="font-size:10px;color:#818cf8;min-height:14px;margin-bottom:4px"></div>';
   h+='<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:6px">';
@@ -6186,6 +6190,13 @@ function vwUpdateKbDisplay() {
 // ─── VOICE INPUT FOR BULK LEAVE ──────────────────────────────────
 var _voiceRecognition=null;
 
+function vwVoiceTextSubmit(eid){
+  var el=document.getElementById('voice-text-'+eid);
+  if(!el||!el.value.trim())return;
+  vwVoiceParse(el.value.toLowerCase().trim(),eid);
+  el.value='';
+}
+
 function vwVoiceStart(eid){
   if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){
     toast('Browser voice support nahi hai! Chrome use karo.',false);return;
@@ -6198,7 +6209,7 @@ function vwVoiceStart(eid){
 
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   const r=new SR();
-  r.lang='hi-IN';
+  r.lang='en-IN';
   r.continuous=false;
   r.interimResults=true;
   _voiceRecognition=r;
@@ -6208,6 +6219,9 @@ function vwVoiceStart(eid){
   r.onresult=function(e){
     var transcript='';
     for(var i=0;i<e.results.length;i++) transcript+=e.results[i][0].transcript;
+    // Show in text box too
+    var txtEl=document.getElementById('voice-text-'+eid);
+    if(txtEl)txtEl.value=transcript;
     if(statusEl)statusEl.textContent='🎤 Suna: "'+transcript+'"';
     if(e.results[e.results.length-1].isFinal){
       vwVoiceParse(transcript.toLowerCase().trim(),eid);
@@ -6215,7 +6229,8 @@ function vwVoiceStart(eid){
   };
 
   r.onerror=function(e){
-    if(statusEl)statusEl.textContent='Error: '+e.error;
+    var msg=e.error==='network'?'Network error — neeche box mein type karo!':e.error==='not-allowed'?'Mic permission do!':e.error;
+    if(statusEl)statusEl.innerHTML='<span style="color:#f87171">'+msg+'</span>';
     vwVoiceReset(eid);
   };
 
@@ -6231,99 +6246,129 @@ function vwVoiceReset(eid){
 
 function vwVoiceParse(text,eid){
   const statusEl=document.getElementById('voice-status-'+eid);
+  if(statusEl)statusEl.innerHTML='<span style="color:#818cf8">Parsing: "'+text+'"</span>';
 
-  // Code map — Hindi + English variants
-  const codeMap={
-    'rest':'R','r':'R','aar':'R','vishram':'R',
-    'cl':'CL','casual':'CL','aakashmik':'CL','kashmik':'CL',
-    'sl':'SL','sick':'SL','bimari':'SL','medical':'SL',
-    'el':'EL','earned':'EL','arjit':'EL',
-    'od':'OD','on duty':'OD','duty':'OD','ड्यूटी':'OD',
-    'p':'P','present':'P','present':'P','upasthit':'P','hazir':'P',
-    'u':'U','night':'U','raat':'U',
-    'we':'WE','weekly':'WE','hafta':'WE',
-    'hd':'HD','holiday':'HD','avkash':'HD','chutti':'HD','chhutti':'HD',
-    'a':'A','absent':'A','anupasthit':'A',
-    'leave':'CL','lvl':'EL'
+  // Normalize — lowercase, remove punctuation
+  text=text.toLowerCase().replace(/[।,\.]/g,' ').trim();
+
+  // ── CODE DETECTION ──
+  // Priority order — longer phrases first to avoid partial matches
+  const codeList=[
+    {keys:['on duty','onduty','on-duty','ओडी','od'],code:'OD'},
+    {keys:['holiday eve','he','holiday evening'],code:'HE'},
+    {keys:['weekly off','week end','weekend','weekly','we','hafta','haftik'],code:'WE'},
+    {keys:['holiday','hd','avkash divas','chutti divas'],code:'HD'},
+    {keys:['earned leave','el','arjit','earned'],code:'EL'},
+    {keys:['casual leave','cl','aakashmik','kashmik','casual'],code:'CL'},
+    {keys:['sick leave','sl','bimari','medical','sick'],code:'SL'},
+    {keys:['rest','aar','r','vishram','rest day','aaram'],code:'R'},
+    {keys:['absent','a','anupasthit','abscent'],code:'A'},
+    {keys:['night','u','raat','night shift'],code:'U'},
+    {keys:['sunday','s','sanday','sun','ravivar','रविवार'],code:'S'},
+    {keys:['present','p','hazir','upasthit','pee'],code:'P'},
+    {keys:['late leave','ll'],code:'LL'},
+  ];
+
+  let detectedCode=null;
+  for(const item of codeList){
+    for(const key of item.keys){
+      // Word boundary check for single chars
+      if(key.length===1){
+        if(new RegExp('\\b'+key+'\\b').test(text)){detectedCode=item.code;break;}
+      } else {
+        if(text.includes(key)){detectedCode=item.code;break;}
+      }
+    }
+    if(detectedCode)break;
+  }
+
+  // ── NUMBER DETECTION ──
+  // Hindi/Hinglish number words
+  const numWords={
+    'ek':1,'one':1,'do':2,'two':2,'teen':3,'tin':3,'three':3,
+    'char':4,'four':4,'paanch':5,'panch':5,'five':5,
+    'chhe':6,'chhah':6,'six':6,'saat':7,'sat':7,'seven':7,
+    'aath':8,'eight':8,'nau':9,'nine':9,'das':10,'ten':10,
+    'gyarah':11,'eleven':11,'barah':12,'twelve':12,
+    'terah':13,'thirteen':13,'chaudah':14,'fourteen':14,
+    'pandrah':15,'fifteen':15,'solah':16,'sixteen':16,
+    'satrah':17,'seventeen':17,'atharah':18,'eighteen':18,
+    'unnees':19,'nineteen':19,'bees':20,'twenty':20,
+    'ikkis':21,'twenty one':21,'bais':22,'twenty two':22,
+    'teis':23,'twenty three':23,'chaubis':24,'twenty four':24,
+    'pachchis':25,'twenty five':25,'chhabbis':26,'twenty six':26,
+    'sattaees':27,'twenty seven':27,'athaees':28,'twenty eight':28,
+    'untees':29,'twenty nine':29,'tees':30,'thirty':30,
+    'ikattis':31,'thirty one':31
   };
 
-  // Hindi number map
-  const hindiNums={'ek':1,'do':2,'teen':3,'tin':3,'char':4,'paanch':5,'chhe':6,'saat':7,'aath':8,'nau':9,'das':10,
-    'gyarah':11,'barah':12,'terah':13,'chaudah':14,'pandrah':15,'solah':16,'satrah':17,'atharah':18,
-    'unnees':19,'bees':20,'ikkis':21,'bais':22,'teis':23,'chaubis':24,'pachchis':25,'chhabbis':26,
-    'sattaees':27,'athaees':28,'untees':29,'tees':30,'ikattis':31};
-
-  // Extract code
-  let detectedCode=null;
-  for(const [key,val] of Object.entries(codeMap)){
-    if(text.includes(key)){detectedCode=val;break;}
-  }
-
-  if(!detectedCode){
-    if(statusEl)statusEl.innerHTML='<span style="color:#f87171">Code nahi samjha! Dobara bolo (jaise "5 ka rest")</span>';
-    return;
-  }
-
-  // Extract dates
-  // Convert Hindi numbers to digits
   let processed=text;
-  for(const [hin,num] of Object.entries(hindiNums)){
-    processed=processed.replace(new RegExp('\\b'+hin+'\\b','g'),String(num));
+  // Replace word numbers with digits
+  for(const [word,num] of Object.entries(numWords)){
+    processed=processed.replace(new RegExp('\\b'+word+'\\b','g'),' '+num+' ');
   }
+
+  const row=vwData&&vwData.rows&&vwData.rows.find(function(r){return r.eid===eid;});
+  if(!row){toast('Row nahi mila!',false);return;}
+  const allBlanks=[];
+  for(let d=1;d<=vwData.dim;d++){if(!row.days[d])allBlanks.push(d);}
 
   const days=[];
 
-  // Pattern: "X se Y ka" → range
-  const rangeMatch=processed.match(/(\d+)\s*se\s*(\d+)/);
-  if(rangeMatch){
-    const from=parseInt(rangeMatch[1]),to=parseInt(rangeMatch[2]);
-    for(let i=from;i<=to;i++) days.push(i);
+  // "saare" / "sab" / "all" → all blanks
+  if(/\b(saare|sab|all|सारे|सब|poore)\b/.test(processed)){
+    days.push(...allBlanks);
   }
 
-  // Pattern: "saare blank" → all blanks
-  if(text.includes('saare')||text.includes('sab')||text.includes('सारे')||text.includes('सब')){
-    const row=vwData.rows.find(function(r){return r.eid===eid;});
-    if(row){for(let d=1;d<=vwData.dim;d++){if(!row.days[d])days.push(d);}}
-  }
-
-  // Pattern: individual numbers "5 aur 10 ka" or "5, 10, 15 ka"
+  // Range: "5 se 15" / "5 to 15" / "5-15"
   if(!days.length){
-    const nums=processed.match(/\d+/g);
-    if(nums) nums.forEach(function(n){const d=parseInt(n);if(d>=1&&d<=31)days.push(d);});
+    const rangeMatch=processed.match(/(\d+)\s*(?:se|to|-)\s*(\d+)/);
+    if(rangeMatch){
+      const from=parseInt(rangeMatch[1]),to=parseInt(rangeMatch[2]);
+      for(let i=Math.min(from,to);i<=Math.max(from,to);i++) days.push(i);
+    }
   }
 
+  // Individual numbers
   if(!days.length){
-    if(statusEl)statusEl.innerHTML='<span style="color:#f87171">Date nahi samjhi! Bolo jaise "5 ka rest" ya "10 se 15 ka CL"</span>';
+    const nums=[...processed.matchAll(/\b(\d{1,2})\b/g)].map(m=>parseInt(m[1])).filter(n=>n>=1&&n<=31);
+    days.push(...nums);
+  }
+
+  // No code but days found → show which codes available
+  if(!detectedCode){
+    const heard='Suna: "'+text+'" — Code nahi samjha!<br>Bolo: "'+
+      (days.length?days[0]+' ':'')+' rest / CL / SL / EL / P / OD"';
+    if(statusEl)statusEl.innerHTML='<span style="color:#f87171">'+heard+'</span>';
     return;
   }
 
-  // Apply codes
-  const row=vwData.rows.find(function(r){return r.eid===eid;});
-  if(!row){return;}
-  const applied=[];
-  const blankDays=[];
-  for(let d=1;d<=vwData.dim;d++){if(!row.days[d])blankDays.push(d);}
-
-  days.forEach(function(d){
-    if(d>=1&&d<=vwData.dim&&!row.days[d]){
-      row.days[d]=detectedCode;
-      applied.push(d);
+  // No days but code found → apply to all blanks if only 1 blank, else ask
+  if(!days.length){
+    if(allBlanks.length===1){
+      days.push(allBlanks[0]);
+    } else {
+      if(statusEl)statusEl.innerHTML='<span style="color:#f87171">Din nahi samjha! Bolo: "5 ka '+detectedCode.toLowerCase()+'" ya "saare '+detectedCode.toLowerCase()+'"</span>';
+      return;
     }
+  }
+
+  // Apply!
+  const applied=[];
+  days.forEach(function(d){
+    if(d>=1&&d<=vwData.dim&&!row.days[d]){row.days[d]=detectedCode;applied.push(d);}
   });
 
   if(!applied.length){
-    if(statusEl)statusEl.innerHTML='<span style="color:#f87171">Date already filled hai ya range mein nahi!</span>';
+    if(statusEl)statusEl.innerHTML='<span style="color:#f87171">Days already filled hain!</span>';
     return;
   }
 
-  // Log for undo
   vwLog.unshift({eid,code:detectedCode,days:applied,dateTime:Date.now()});
   LS.s('vwlog',vwLog);
-
-  if(statusEl)statusEl.innerHTML='<span style="color:#16a34a">✅ Day '+applied.join(', ')+' → <b>'+detectedCode+'</b> applied!</span>';
+  if(statusEl)statusEl.innerHTML='<span style="color:#16a34a">✅ Day '+applied.join(', ')+' → <b>'+detectedCode+'</b> done!</span>';
   toast('🎤 '+applied.length+' din → '+detectedCode);
-
-  setTimeout(function(){vwRenderBulkPanel(eid);vwRender();},400);
+  setTimeout(function(){vwRenderBulkPanel(eid);vwRender();},300);
 }
 // ─────────────────────────────────────────────────────────────────
 
