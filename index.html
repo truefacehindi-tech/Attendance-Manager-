@@ -6225,36 +6225,64 @@ function vwToggleAutoVoice(eid){
   }
 }
 
-function vwAutoAsk(eid,row,blankDays){
-  if(!window._autoVoiceMode||!row||!blankDays||!blankDays.length)return;
+var _autoCurrentDay=null;   // Current date being asked
+var _autoRemainingDays=[];  // Queue of blank days
+var _autoCurrentEid=null;
 
-  // Stop any existing recognition
-  if(_voiceRecognition){try{_voiceRecognition.stop();}catch(e){}_voiceRecognition=null;}
+function vwAutoAsk(eid,row,blankDays){
+  if(!window._autoVoiceMode||!row||!blankDays||!blankDays.length){
+    // Sab ho gaya — next employee
+    if(window._autoVoiceMode&&(!blankDays||!blankDays.length)){
+      vwSpeak('Sab dates ho gayi. Agla employee.');
+      setTimeout(function(){vwNextEmp();},1500);
+    }
+    return;
+  }
+
+  // Setup queue
+  _autoCurrentEid=eid;
+  _autoRemainingDays=[...blankDays].sort((a,b)=>a-b);
 
   const name=row.name||eid;
   const firstName=name.split(' ')[0];
-  const question=firstName+' ke '+blankDays.length+' blank dates hain. Kya bharna hai?';
+  // Intro then ask first date
+  vwSpeak(firstName+' ke '+blankDays.length+' blank dates hain.',function(){
+    vwAskNextDay(eid,row);
+  });
 
-  // Speak the question
-  if(window.speechSynthesis){
-    window.speechSynthesis.cancel();
-    const utt=new SpeechSynthesisUtterance(question);
-    utt.lang='hi-IN';
-    utt.rate=1.1;
-    utt.pitch=1;
-    utt.volume=1;
-    utt.onend=function(){
-      // Start listening after speaking
-      if(window._autoVoiceMode) vwAutoListen(eid);
-    };
-    window.speechSynthesis.speak(utt);
-  } else {
-    vwAutoListen(eid);
+  const statusEl=document.getElementById('voice-status-'+eid);
+  if(statusEl)statusEl.innerHTML='<span style="color:#22c55e">🤖 '+firstName+' — '+blankDays.length+' blank dates</span>';
+}
+
+function vwAskNextDay(eid,row){
+  if(!window._autoVoiceMode)return;
+
+  // Refresh remaining from actual row (some may have been filled)
+  _autoRemainingDays=_autoRemainingDays.filter(function(d){return !row.days[d];});
+
+  if(!_autoRemainingDays.length){
+    vwSpeak('Ho gaya. Agla employee.',function(){
+      setTimeout(function(){if(window._autoVoiceMode)vwNextEmp();},600);
+    });
+    return;
   }
 
-  // Update status
+  _autoCurrentDay=_autoRemainingDays[0];
   const statusEl=document.getElementById('voice-status-'+eid);
-  if(statusEl)statusEl.innerHTML='<span style="color:#22c55e">🤖 Puch raha: "'+question+'"</span>';
+  if(statusEl)statusEl.innerHTML='<span style="color:#f59e0b">🤖 Din <b>'+_autoCurrentDay+'</b> — kya bharna hai? (skip bolo chhodne ke liye)</span>';
+
+  vwSpeak('Din '+_autoCurrentDay+'. Kya bharna hai?',function(){
+    if(window._autoVoiceMode) vwAutoListen(eid);
+  });
+}
+
+function vwSpeak(text,onDone){
+  if(!window.speechSynthesis){if(onDone)onDone();return;}
+  window.speechSynthesis.cancel();
+  const utt=new SpeechSynthesisUtterance(text);
+  utt.lang='hi-IN';utt.rate=1.15;utt.pitch=1;utt.volume=1;
+  if(onDone)utt.onend=onDone;
+  window.speechSynthesis.speak(utt);
 }
 
 function vwAutoListen(eid){
@@ -6269,25 +6297,97 @@ function vwAutoListen(eid){
   _voiceRecognition=r;
 
   const statusEl=document.getElementById('voice-status-'+eid);
-  if(statusEl)statusEl.innerHTML='<span style="color:#818cf8">🎤 Bol do...</span>';
 
   r.onresult=function(e){
-    const transcript=e.results[0][0].transcript;
-    if(statusEl)statusEl.innerHTML='<span style="color:#818cf8">Suna: "'+transcript+'"</span>';
+    const transcript=e.results[0][0].transcript.toLowerCase().trim();
+    if(statusEl)statusEl.innerHTML='<span style="color:#818cf8">Suna: "'+transcript+'" (Din '+_autoCurrentDay+')</span>';
     _voiceRecognition=null;
-    vwVoiceParse(transcript.toLowerCase().trim(),eid);
+    vwAutoApplyToCurrentDay(transcript,eid);
   };
 
   r.onerror=function(e){
     _voiceRecognition=null;
     if(e.error==='no-speech'){
-      // Retry once on no-speech
-      setTimeout(function(){if(window._autoVoiceMode)vwAutoListen(eid);},500);
+      setTimeout(function(){if(window._autoVoiceMode)vwAutoListen(eid);},400);
     }
   };
 
   r.onend=function(){_voiceRecognition=null;};
   try{r.start();}catch(e){}
+}
+
+function vwAutoApplyToCurrentDay(text,eid){
+  const row=vwData&&vwData.rows&&vwData.rows.find(function(r){return r.eid===eid;});
+  if(!row){return;}
+  const day=_autoCurrentDay;
+  const statusEl=document.getElementById('voice-status-'+eid);
+
+  // SKIP / CHHODO / BLANK — leave this date empty
+  if(/\b(skip|chhodo|chodo|chhod|blank|khali|khaali|next|aage|छोड़ो|स्किप)\b/.test(text)){
+    if(statusEl)statusEl.innerHTML='<span style="color:#f59e0b">⏭️ Din '+day+' skip kiya (blank)</span>';
+    vwSpeak('Din '+day+' chhoda.');
+    // Remove from queue, move to next
+    _autoRemainingDays=_autoRemainingDays.filter(function(d){return d!==day;});
+    setTimeout(function(){vwAskNextDay(eid,row);},900);
+    return;
+  }
+
+  // Detect code
+  const detectedCode=vwDetectCode(text);
+  if(!detectedCode){
+    if(statusEl)statusEl.innerHTML='<span style="color:#f87171">Code samjha nahi: "'+text+'" — dobara bolo ya skip bolo</span>';
+    vwSpeak('Samjha nahi. Dobara bolo.',function(){
+      if(window._autoVoiceMode)vwAutoListen(eid);
+    });
+    return;
+  }
+
+  // Apply to current day
+  if(day>=1&&day<=vwData.dim&&!row.days[day]){
+    row.days[day]=detectedCode;
+    // Log
+    vwLog.unshift({eid,name:(row.name||''),code:detectedCode,days:[day],dates:String(day),dateTime:Date.now(),mon:vwData.mon,yr:vwData.yr});
+    LS.s('vwlog',vwLog);
+    vwUpdateLogDisplay();
+  }
+
+  // Remove from queue
+  _autoRemainingDays=_autoRemainingDays.filter(function(d){return d!==day;});
+
+  if(statusEl)statusEl.innerHTML='<span style="color:#16a34a">✅ Din '+day+' → <b>'+detectedCode+'</b></span>';
+
+  setTimeout(function(){
+    vwRenderBulkPanel(eid);
+    vwRender();
+    if(window._autoVoiceMode) vwAskNextDay(eid,row);
+  },300);
+}
+
+// Shared code detection (used by both free-form and auto mode)
+function vwDetectCode(text){
+  text=text.toLowerCase().replace(/[।,\.]/g,' ').trim();
+  const codeList=[
+    {keys:['on duty','onduty','on-duty','od'],code:'OD'},
+    {keys:['holiday eve','he'],code:'HE'},
+    {keys:['weekly off','week end','weekend','weekly','we','hafta'],code:'WE'},
+    {keys:['holiday','hd','chutti divas'],code:'HD'},
+    {keys:['earned leave','el','arjit','earned'],code:'EL'},
+    {keys:['casual leave','cl','aakashmik','kashmik','casual'],code:'CL'},
+    {keys:['sick leave','sl','bimari','medical','sick'],code:'SL'},
+    {keys:['rest','aar','r','vishram','aaram'],code:'R'},
+    {keys:['absent','a','anupasthit'],code:'A'},
+    {keys:['night','u','raat'],code:'U'},
+    {keys:['sunday','s','sanday','sun','ravivar'],code:'S'},
+    {keys:['present','p','hazir','upasthit','pee'],code:'P'},
+    {keys:['late leave','ll'],code:'LL'}
+  ];
+  for(const item of codeList){
+    for(const key of item.keys){
+      if(key.length===1){if(new RegExp('\\b'+key+'\\b').test(text))return item.code;}
+      else{if(text.includes(key))return item.code;}
+    }
+  }
+  return null;
 }
 
 function vwVoiceStart(eid){
@@ -6497,6 +6597,7 @@ function vwVoiceParse(text,eid){
 
   vwLog.unshift({eid,name:(row.name||''),code:detectedCode,days:applied,dates:applied.join(', '),dateTime:Date.now(),mon:vwData.mon,yr:vwData.yr});
   LS.s('vwlog',vwLog);
+  vwUpdateLogDisplay();
   if(statusEl)statusEl.innerHTML='<span style="color:#16a34a">✅ Day '+applied.join(', ')+' → <b>'+detectedCode+'</b> done!</span>';
   toast('🎤 '+applied.length+' din → '+detectedCode);
 
@@ -6816,50 +6917,67 @@ function vwLogDownload(){
 
   const fmtDate=(d,mon,yr)=>{
     if(!d)return '';
-    if(mon!==undefined&&yr){
+    if(mon!==undefined&&mon!==null&&yr){
       return String(d).padStart(2,'0')+'.'+String(mon+1).padStart(2,'0')+'.'+yr;
     }
+    // Fallback: use current vwData month/year if entry missing it
+    if(vwData&&vwData.mon!==undefined&&vwData.yr){
+      return String(d).padStart(2,'0')+'.'+String(vwData.mon+1).padStart(2,'0')+'.'+vwData.yr;
+    }
     return String(d);
+  };
+
+  // Name lookup helper — from log, then vwData rows, then roster
+  const getName=(l)=>{
+    if(l.name)return l.name;
+    if(vwData&&vwData.rows){
+      const r=vwData.rows.find(function(x){return x.eid===l.eid;});
+      if(r&&r.name)return r.name;
+    }
+    const emp=S.emps.find(function(e){return e.i===l.eid;});
+    if(emp&&emp.n)return emp.n;
+    return '';
+  };
+
+  // Time format helper
+  const fmtTime=(dt)=>{
+    if(!dt)return '';
+    if(typeof dt==='number')return new Date(dt).toLocaleString('en-IN');
+    return dt;
   };
 
   // Expand each log entry into consecutive-date ranges
   const expanded=[];
   vwLog.forEach(function(l){
-    const daysArr=Array.isArray(l.days)&&l.days.length?l.days.map(Number):(l.dates?l.dates.split(',').map(Number).filter(Boolean):[]);
+    const daysArr=Array.isArray(l.days)&&l.days.length?l.days.map(Number):(l.dates?String(l.dates).split(',').map(Number).filter(Boolean):[]);
     if(!daysArr.length)return;
     const sorted=[...daysArr].sort((a,b)=>a-b);
-    // Group consecutive days into ranges
+    const mon=(l.mon!==undefined&&l.mon!==null)?l.mon:(vwData?vwData.mon:undefined);
+    const yr=l.yr||(vwData?vwData.yr:undefined);
     let rangeStart=sorted[0],prev=sorted[0];
     for(let i=1;i<=sorted.length;i++){
       if(i<sorted.length&&sorted[i]===prev+1){prev=sorted[i];continue;}
-      // Close current range
       expanded.push({
-        eid:l.eid||'',name:l.name||'',code:l.code||l.action||'',
-        startDay:rangeStart,endDay:prev,
-        totalDays:prev-rangeStart+1,
-        mon:l.mon,yr:l.yr,dateTime:l.dateTime||l.time||''
+        eid:l.eid||'',name:getName(l),code:l.code||l.action||'',
+        startDay:rangeStart,endDay:prev,totalDays:prev-rangeStart+1,
+        mon:mon,yr:yr,dateTime:fmtTime(l.dateTime||l.time||'')
       });
       if(i<sorted.length){rangeStart=sorted[i];prev=sorted[i];}
     }
   });
 
-  // Sort by start date
   expanded.sort((a,b)=>(a.startDay||0)-(b.startDay||0));
 
-  const rows=expanded.map((e,i)=>{
-    let dtStr=e.dateTime;
-    if(typeof dtStr==='number')dtStr=new Date(dtStr).toLocaleString('en-IN');
-    return {
-      'SN':i+1,
-      'Employee ID':e.eid,
-      'Employee Name':e.name,
-      'Code':e.code,
-      'Start Date':fmtDate(e.startDay,e.mon,e.yr),
-      'End Date':fmtDate(e.endDay,e.mon,e.yr),
-      'Total Days':e.totalDays,
-      'Date & Time':dtStr
-    };
-  });
+  const rows=expanded.map((e,i)=>({
+    'SN':i+1,
+    'Employee ID':e.eid,
+    'Employee Name':e.name,
+    'Code':e.code,
+    'Start Date':fmtDate(e.startDay,e.mon,e.yr),
+    'End Date':fmtDate(e.endDay,e.mon,e.yr),
+    'Total Days':e.totalDays,
+    'Date & Time':e.dateTime
+  }));
 
   const ws=XLSX.utils.json_to_sheet(rows);
   ws['!cols']=[{wch:4},{wch:13},{wch:26},{wch:8},{wch:12},{wch:12},{wch:10},{wch:20}];
