@@ -6813,36 +6813,55 @@ function vwAmrDownload2(){
 
 function vwLogDownload(){
   if(!vwLog.length)return alert('No log entries!');
-  // Sort log by date asc before download
-  const sortedLog=[...vwLog].sort((a,b)=>{
-    const da=a.days&&a.days[0]?Number(a.days[0]):0;
-    const db=b.days&&b.days[0]?Number(b.days[0]):0;
-    return da-db;
+
+  const fmtDate=(d,mon,yr)=>{
+    if(!d)return '';
+    if(mon!==undefined&&yr){
+      return String(d).padStart(2,'0')+'.'+String(mon+1).padStart(2,'0')+'.'+yr;
+    }
+    return String(d);
+  };
+
+  // Expand each log entry into consecutive-date ranges
+  const expanded=[];
+  vwLog.forEach(function(l){
+    const daysArr=Array.isArray(l.days)&&l.days.length?l.days.map(Number):(l.dates?l.dates.split(',').map(Number).filter(Boolean):[]);
+    if(!daysArr.length)return;
+    const sorted=[...daysArr].sort((a,b)=>a-b);
+    // Group consecutive days into ranges
+    let rangeStart=sorted[0],prev=sorted[0];
+    for(let i=1;i<=sorted.length;i++){
+      if(i<sorted.length&&sorted[i]===prev+1){prev=sorted[i];continue;}
+      // Close current range
+      expanded.push({
+        eid:l.eid||'',name:l.name||'',code:l.code||l.action||'',
+        startDay:rangeStart,endDay:prev,
+        totalDays:prev-rangeStart+1,
+        mon:l.mon,yr:l.yr,dateTime:l.dateTime||l.time||''
+      });
+      if(i<sorted.length){rangeStart=sorted[i];prev=sorted[i];}
+    }
   });
-  const rows=sortedLog.map((l,i)=>{
-    const daysArr=Array.isArray(l.days)&&l.days.length?l.days:(l.dates?l.dates.split(',').map(Number).filter(Boolean):[]);
-    const sortedDays=daysArr.map(Number).sort((a,b)=>a-b); // asc order — 1 pehle
-    const day=sortedDays.length?sortedDays[0]:'';
-    const dtStr=l.dateTime||l.time||'';
-    const fmtDate=d=>{
-      if(!d) return '';
-      if(l.mon!==undefined&&l.yr){
-        return String(d).padStart(2,'0')+'.'+String(l.mon+1).padStart(2,'0')+'.'+l.yr;
-      }
-      return String(d);
-    };
+
+  // Sort by start date
+  expanded.sort((a,b)=>(a.startDay||0)-(b.startDay||0));
+
+  const rows=expanded.map((e,i)=>{
+    let dtStr=e.dateTime;
+    if(typeof dtStr==='number')dtStr=new Date(dtStr).toLocaleString('en-IN');
     return {
       'SN':i+1,
-      'Employee ID':l.eid||'',
-      'Employee Name':l.name||'',
-      'Code':l.code||l.action||'',
-      'Start Date':fmtDate(day),
-      'End Date':fmtDate(day),
-      'Total Days':1,
+      'Employee ID':e.eid,
+      'Employee Name':e.name,
+      'Code':e.code,
+      'Start Date':fmtDate(e.startDay,e.mon,e.yr),
+      'End Date':fmtDate(e.endDay,e.mon,e.yr),
+      'Total Days':e.totalDays,
       'Date & Time':dtStr
     };
   });
-    const ws=XLSX.utils.json_to_sheet(rows);
+
+  const ws=XLSX.utils.json_to_sheet(rows);
   ws['!cols']=[{wch:4},{wch:13},{wch:26},{wch:8},{wch:12},{wch:12},{wch:10},{wch:20}];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Viewer Activity Log');
   XLSX.writeFile(wb,'Viewer_Activity_Log.xlsx');
