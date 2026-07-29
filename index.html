@@ -6326,7 +6326,6 @@ function vwAutoApplyToCurrentDay(text,eid){
   if(/\b(skip|chhodo|chodo|chhod|blank|khali|khaali|next|aage|छोड़ो|स्किप)\b/.test(text)){
     if(statusEl)statusEl.innerHTML='<span style="color:#f59e0b">⏭️ Din '+day+' skip kiya (blank)</span>';
     vwSpeak('Din '+day+' chhoda.');
-    // Remove from queue, move to next
     _autoRemainingDays=_autoRemainingDays.filter(function(d){return d!==day;});
     setTimeout(function(){vwAskNextDay(eid,row);},900);
     return;
@@ -6342,25 +6341,69 @@ function vwAutoApplyToCurrentDay(text,eid){
     return;
   }
 
-  // Apply to current day
-  if(day>=1&&day<=vwData.dim&&!row.days[day]){
-    row.days[day]=detectedCode;
-    // Log
-    vwLog.unshift({eid,name:(row.name||''),code:detectedCode,days:[day],dates:String(day),dateTime:Date.now(),mon:vwData.mon,yr:vwData.yr});
+  // Detect if user spoke a RANGE or MULTIPLE dates (bulk within auto mode)
+  const spokenDays=vwExtractDays(text);
+  let targetDays=[];
+
+  if(spokenDays.length){
+    // User specified explicit dates/range → use those
+    targetDays=spokenDays.filter(function(d){return d>=1&&d<=vwData.dim&&!row.days[d];});
+  } else {
+    // No dates spoken → apply only to current asked day
+    targetDays=[day];
+  }
+
+  // Apply
+  const applied=[];
+  targetDays.forEach(function(d){
+    if(d>=1&&d<=vwData.dim&&!row.days[d]){
+      row.days[d]=detectedCode;
+      applied.push(d);
+    }
+  });
+
+  if(applied.length){
+    vwLog.unshift({eid,name:(row.name||''),code:detectedCode,days:applied,dates:applied.join(', '),dateTime:Date.now(),mon:vwData.mon,yr:vwData.yr});
     LS.s('vwlog',vwLog);
     vwUpdateLogDisplay();
   }
 
-  // Remove from queue
-  _autoRemainingDays=_autoRemainingDays.filter(function(d){return d!==day;});
+  // Remove all applied days from queue
+  _autoRemainingDays=_autoRemainingDays.filter(function(d){return !applied.includes(d);});
 
-  if(statusEl)statusEl.innerHTML='<span style="color:#16a34a">✅ Din '+day+' → <b>'+detectedCode+'</b></span>';
+  const rangeMsg=applied.length>1?'Din '+applied[0]+' se '+applied[applied.length-1]+' → '+detectedCode:'Din '+applied[0]+' → '+detectedCode;
+  if(statusEl)statusEl.innerHTML='<span style="color:#16a34a">✅ '+rangeMsg+'</span>';
+  if(applied.length>1)vwSpeak(applied.length+' din '+detectedCode+' ho gaya.');
 
   setTimeout(function(){
     vwRenderBulkPanel(eid);
     vwRender();
     if(window._autoVoiceMode) vwAskNextDay(eid,row);
   },300);
+}
+
+// Extract days from spoken text (range or list)
+function vwExtractDays(text){
+  const numWords={'ek':1,'do':2,'teen':3,'tin':3,'char':4,'paanch':5,'panch':5,'chhe':6,'saat':7,'sat':7,'aath':8,'nau':9,'das':10,
+    'gyarah':11,'barah':12,'terah':13,'chaudah':14,'pandrah':15,'solah':16,'satrah':17,'atharah':18,'unnees':19,'bees':20,
+    'ikkis':21,'bais':22,'teis':23,'chaubis':24,'pachchis':25,'chhabbis':26,'sattaees':27,'athaees':28,'untees':29,'tees':30,'ikattis':31,
+    'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,
+    'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,'twenty':20,'thirty':30};
+  let processed=' '+text.toLowerCase()+' ';
+  for(const [w,n] of Object.entries(numWords)){
+    processed=processed.replace(new RegExp('\\b'+w+'\\b','g'),' '+n+' ');
+  }
+  const days=[];
+  // Range: "23 se 31" / "23 to 31" / "23-31"
+  const rangeMatch=processed.match(/(\d+)\s*(?:se|to|-|तक)\s*(\d+)/);
+  if(rangeMatch){
+    const from=parseInt(rangeMatch[1]),to=parseInt(rangeMatch[2]);
+    for(let i=Math.min(from,to);i<=Math.max(from,to);i++)days.push(i);
+    return days;
+  }
+  // Individual numbers
+  const nums=[...processed.matchAll(/\b(\d{1,2})\b/g)].map(m=>parseInt(m[1])).filter(n=>n>=1&&n<=31);
+  return nums;
 }
 
 // Shared code detection (used by both free-form and auto mode)
