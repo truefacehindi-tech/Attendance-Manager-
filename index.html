@@ -597,13 +597,13 @@ function render(){
       <div style="display:flex;gap:5px;align-items:center"><span id="save-time" style="font-size:8px;color:#4b5563"></span><button class="btn bg2" style="font-size:10px" onclick="saveAllBtn()">Save</button><button class="btn bg2" style="font-size:10px" onclick="exportAllData()">Export</button><button class="btn bg2" style="font-size:10px" onclick="document.getElementById('import-file').click()">Import</button><button class="btn bg2" style="font-size:10px;color:#f59e0b" onclick="showStorageManager()">Storage</button><button class="btn bg2" style="font-size:10px" onclick="resetAll()">Reset</button><input type="file" id="import-file" accept=".json" style="display:none" onchange="importAllData(this)"></div>
     </div>
     <div id="storage-warn" style="display:none;background:rgba(239,68,68,.15);color:#f87171;font-size:10px;padding:4px 10px;border-radius:6px;margin-top:4px;font-weight:600;text-align:center"></div>
-    <div class="tabs">${[['bio','Biometric'],['roster','Roster'],['contractor','Contractor'],['charging','Charging'],['payslip','Pay Slip'],['realtime','Live Monitor'],['salreg','Sal Register'],['master','Master Data'],['yearly','Yearly Att'],['ot','Overtime'],['night','Night Hours'],['newentry','New Entry'],['report','Monthly Report'],['viewer','Import Viewer'],['letter','Letter Gen'],['dsr','DSR']].map(([k,l])=>`<button class="tb ${S.tab===k?'on':''}" onclick="setTab('${k}')">${l}</button>`).join('')}</div>
+    <div class="tabs">${[['bio','Biometric'],['roster','Roster'],['contractor','Contractor'],['charging','Charging'],['payslip','Pay Slip'],['realtime','Live Monitor'],['salreg','Sal Register'],['master','Master Data'],['yearly','Yearly Att'],['ot','Overtime'],['night','Night Hours'],['newentry','New Entry'],['report','Monthly Report'],['viewer','Import Viewer'],['letter','Letter Gen']].map(([k,l])=>`<button class="tb ${S.tab===k?'on':''}" onclick="setTab('${k}')">${l}</button>`).join('')}</div>
     <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
       <button class="btn bg2" style="font-size:16px;padding:4px 10px;line-height:1" onclick="document.getElementById('nav-menu').style.display=document.getElementById('nav-menu').style.display==='block'?'none':'block'">☰</button>
-      <span style="font-size:13px;font-weight:600;color:#a5b4fc">${{bio:'Biometric',roster:'Roster',contractor:'Contractor',charging:'Charging',payslip:'Pay Slip',realtime:'Live Monitor',salreg:'Sal Register',master:'Master Data',yearly:'Yearly Attendance',ot:'Overtime',night:'Night Hours',newentry:'New Employee Entry',report:'Monthly Report',viewer:'Import Viewer',letter:'Letter Generator',dsr:'DSR — Daily Summary Report'}[S.tab]||S.tab}</span>
+      <span style="font-size:13px;font-weight:600;color:#a5b4fc">${{bio:'Biometric',roster:'Roster',contractor:'Contractor',charging:'Charging',payslip:'Pay Slip',realtime:'Live Monitor',salreg:'Sal Register',master:'Master Data',yearly:'Yearly Attendance',ot:'Overtime',night:'Night Hours',newentry:'New Employee Entry',report:'Monthly Report',viewer:'Import Viewer',letter:'Letter Generator'}[S.tab]||S.tab}</span>
     </div>
     <div id="nav-menu" style="display:none;position:absolute;left:12px;right:12px;top:70px;background:#1a2236;border:1px solid rgba(99,102,241,.2);border-radius:12px;padding:8px;z-index:100;box-shadow:0 8px 32px rgba(0,0,0,.5)">
-      ${[['bio','Biometric'],['roster','Roster'],['contractor','Contractor'],['charging','Charging'],['payslip','Pay Slip'],['realtime','Live Monitor'],['salreg','Sal Register'],['master','Master Data'],['yearly','Yearly Att'],['ot','Overtime'],['night','Night Hours'],['newentry','New Entry'],['report','Monthly Report'],['viewer','Import Viewer'],['letter','Letter Gen'],['dsr','DSR']].map(([k,l])=>`<div style="padding:10px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:${S.tab===k?'700':'500'};color:${S.tab===k?'#a5b4fc':'#94a3b8'};background:${S.tab===k?'rgba(99,102,241,.15)':'transparent'}" onclick="document.getElementById('nav-menu').style.display='none';setTab('${k}')">${l}</div>`).join('')}
+      ${[['bio','Biometric'],['roster','Roster'],['contractor','Contractor'],['charging','Charging'],['payslip','Pay Slip'],['realtime','Live Monitor'],['salreg','Sal Register'],['master','Master Data'],['yearly','Yearly Att'],['ot','Overtime'],['night','Night Hours'],['newentry','New Entry'],['report','Monthly Report'],['viewer','Import Viewer'],['letter','Letter Gen']].map(([k,l])=>`<div style="padding:10px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:${S.tab===k?'700':'500'};color:${S.tab===k?'#a5b4fc':'#94a3b8'};background:${S.tab===k?'rgba(99,102,241,.15)':'transparent'}" onclick="document.getElementById('nav-menu').style.display='none';setTab('${k}')">${l}</div>`).join('')}
     </div>
   </div></header><div class="mn">`;
 
@@ -638,8 +638,6 @@ function render(){
     <div id="bio-status" style="margin-top:12px"></div>
     <div id="bio-downloads" style="display:none"></div>
     <div id="bio-results" style="margin-top:12px"></div>
-    <div id="bio-sms-section" style="margin-top:12px;display:none"></div>
-    <div id="bio-sap-section" style="margin-top:12px"></div>
     
     <!-- BIO ENTRY for NO RECORD / SKIPPED -->
     <div id="bio-entry-section" style="margin-top:12px;display:${Object.keys(bioRawData).length?'block':'none'}">
@@ -732,7 +730,6 @@ function render(){
       <div id="filo-status" style="font-size:10px;color:#94a3b8;margin-bottom:6px"></div>
       <div id="filo-results" style="max-height:450px;overflow-y:auto;margin-top:6px"></div>
     </div>`;
-    setTimeout(function(){sapInitSection();},50);
   }
 
   // ═══ AMR TAB ═══
@@ -890,104 +887,38 @@ function render(){
   // ═══ PAY SLIP TAB ═══
   else if(S.tab==='payslip'){
     h+=`
-    <!-- SECTION 1: TXT to Excel Converter -->
-    <div class="cd" style="padding:16px;margin-bottom:12px;border-left:3px solid #f59e0b">
-      <div style="font-size:14px;font-weight:700;color:#f59e0b;margin-bottom:4px">① TXT → Excel Converter</div>
-      <div style="font-size:10px;color:#4b5563;margin-bottom:10px">Upload SAP pay slip TXT file → converts to formatted Excel (per employee sheet)</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <input type="file" id="ps-txt-file" accept=".txt" style="font-size:11px;color:#94a3b8">
-        <button class="btn bp" style="padding:8px 16px;font-size:12px;background:linear-gradient(135deg,#d97706,#f59e0b)" onclick="psTxtToExcel()">Convert & Download Excel</button>
+    <!-- SECTION 0: Multi-Month HTML Upload (Yearly like) -->
+    <div class="cd" style="padding:16px;margin-bottom:12px;border-left:3px solid #22c55e">
+      <div style="font-size:14px;font-weight:700;color:#22c55e;margin-bottom:2px">📅 Multi-Month Payslip Store</div>
+      <div style="font-size:10px;color:#4b5563;margin-bottom:10px">Yearly Attendance jaisa — har month ka HTML payslip upload karo → permanently store hoga</div>
+      
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+        <input type="file" id="ps-html-files" accept=".html,.htm" multiple style="font-size:11px;color:#94a3b8">
+        <button class="btn bp" style="padding:8px 16px;font-size:12px;background:linear-gradient(135deg,#059669,#10b981)" onclick="psUploadHTML()">⬆ Upload & Save</button>
+        <button class="btn bg2" style="font-size:10px;padding:6px 12px" onclick="psClearAllMonths()" title="Sab months delete karo">🗑 Clear All</button>
       </div>
-      <div id="ps-convert-status" style="margin-top:8px;font-size:11px"></div>
-    </div>
-
-    <!-- SECTION 2: Excel Viewer -->
-    <div class="cd" style="padding:16px;margin-bottom:12px;border-left:3px solid #6366f1">
-      <div style="font-size:14px;font-weight:700;color:#a5b4fc;margin-bottom:4px">② View Slips from Excel</div>
-      <div style="font-size:10px;color:#4b5563;margin-bottom:10px">Converted Excel upload → employee select → slip view</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
-        <input type="file" id="ps-excel-file" accept=".xlsx,.xls" style="font-size:11px;color:#94a3b8">
-        <button class="btn bp" style="padding:8px 16px;font-size:12px" onclick="psLoadExcel()">Load Excel</button>
-      </div>
-      <div id="ps-excel-status" style="margin-bottom:8px;font-size:11px"></div>
-      <div id="ps-emp-select" style="display:none;margin-bottom:10px">
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <select class="inp" id="ps-emp-dropdown" style="flex:1;max-width:320px;font-size:12px;font-weight:600" onchange="psShowFromExcel(this.value)">
-            <option value="">-- Select Employee --</option>
+      <div id="ps-html-status" style="font-size:10px;margin-bottom:8px"></div>
+      
+      <!-- Saved months display -->
+      <div id="ps-months-display" style="margin-bottom:8px"></div>
+      
+      <!-- Month select + view controls -->
+      <div id="ps-month-controls" style="display:none">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+          <select class="inp" id="ps-month-sel" style="max-width:160px;font-size:11px" onchange="psMonthSelected()">
+            <option value="">-- Month Select --</option>
           </select>
-          <input class="inp" id="ps-emp-search" style="max-width:180px" placeholder="Search..." oninput="psFilterDropdown(this.value)">
-          <span id="ps-emp-count" style="font-size:11px;color:#94a3b8"></span>
+          <input class="inp" id="ps-mm-search" placeholder="🔍 Name ya ID..." style="max-width:180px;font-size:11px" oninput="psMMFilter(this.value)">
+          <span id="ps-mm-count" style="font-size:10px;color:#94a3b8"></span>
         </div>
-      </div>
-      <div id="ps-qr-section" style="display:none;border-top:1px solid rgba(255,255,255,.04);padding-top:8px;margin-top:4px">
-        <div style="font-size:11px;font-weight:600;color:#f59e0b;margin-bottom:6px">Quick Report</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-          <select class="inp" id="ps-report-field" style="max-width:220px;font-size:11px"></select>
-          <button class="btn bp" style="font-size:11px;padding:5px 12px" onclick="psQuickReport()">Download Report</button>
-        </div>
+        <div id="ps-mm-emp-list" style="max-height:300px;overflow-y:auto"></div>
+        <div id="ps-mm-slip-view"></div>
       </div>
     </div>
-    <div id="ps-emp-list" style="margin-bottom:12px"></div>
-    <div id="ps-view"></div>
-    
-    <!-- SECTION 3: Multi-Month Report -->
-    <div class="cd" style="padding:16px;margin-top:12px;border-left:3px solid #8b5cf6">
-      <div style="font-size:14px;font-weight:700;color:#a855f7;margin-bottom:4px">③ Multi-Month Report</div>
-      <div style="font-size:10px;color:#4b5563;margin-bottom:10px">Payslip Excel files upload → save permanently → month range select → report</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
-        <input type="file" id="mm-files" accept=".xlsx,.xls" multiple style="font-size:10px;color:#94a3b8">
-        <button class="btn bp" style="padding:7px 14px;font-size:11px;background:linear-gradient(135deg,#7c3aed,#a855f7)" onclick="mmUploadExcel()">Upload & Save</button>
-      </div>
-      <div id="mm-status" style="font-size:10px;margin-bottom:6px"></div>
-      <div id="mm-months-display"></div>
-      <div id="mm-controls" style="display:${Object.keys(mmAllSlips).length?'block':'none'}">
-        <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
-          <div class="cg"><span class="cl" style="font-size:8px">From</span>
-            <select class="inp" id="mm-from" style="max-width:120px;font-size:10px">
-              ${Object.keys(mmAllSlips).sort(yrSortMonths).map(m=>'<option value="'+m+'">'+m+'</option>').join('')}
-            </select>
-          </div>
-          <div class="cg"><span class="cl" style="font-size:8px">To</span>
-            <select class="inp" id="mm-to" style="max-width:120px;font-size:10px">
-              ${Object.keys(mmAllSlips).sort(yrSortMonths).map(m=>'<option value="'+m+'"'+(m===Object.keys(mmAllSlips).sort(yrSortMonths).pop()?' selected':'')+'>'+m+'</option>').join('')}
-            </select>
-          </div>
-          <select class="inp" id="mm-field" style="max-width:180px;font-size:10px"></select>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
-          <button class="btn bp" style="font-size:11px;padding:6px 14px;background:linear-gradient(135deg,#7c3aed,#a855f7)" onclick="mmGenerate()">Generate Report</button>
-          <button class="btn bg2" style="font-size:10px;padding:5px 10px" onclick="mmDownload()">Download Excel</button>
-          <input class="inp" id="mm-search" style="max-width:150px;font-size:10px" placeholder="Search..." oninput="mmFilter(this.value)">
-        </div>
-      </div>
-      <div id="mm-result" style="max-height:60vh;overflow:auto"></div>
-    </div>
-    </div>
-    `;
-  }
 
-  
-  // ═══ REAL-TIME MONITOR TAB ═══
-  else if(S.tab==='realtime'){
-    h+=`<div style="margin-bottom:10px">
-      <div style="font-size:18px;font-weight:800;color:#06b6d4;letter-spacing:-.5px">Live Attendance Monitor</div>
-      <div style="font-size:10px;color:#4b5563">Aaj ki biometric upload karo — real-time IN/OUT track</div>
-    </div>
-    <div class="cd" style="padding:14px;margin-bottom:10px">
-      <div style="font-size:10px;font-weight:600;color:#f59e0b;margin-bottom:6px">Upload 2 files: Yesterday (night OUT filter) + Today</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
-        <div class="cg"><span class="cl" style="font-size:8px">Yesterday</span>
-          <input type="file" id="rt-yesterday" accept=".xlsx,.xls,.csv" style="font-size:9px;color:#94a3b8;max-width:180px">
-        </div>
-        <div class="cg"><span class="cl" style="font-size:8px">Today</span>
-          <input type="file" id="rt-today" accept=".xlsx,.xls,.csv" style="font-size:9px;color:#94a3b8;max-width:180px">
-        </div>
-        <button class="btn bp" style="font-size:11px;padding:7px 14px;background:linear-gradient(135deg,#0891b2,#06b6d4)" onclick="rtProcess()">Process</button>
-      </div>
-      <div id="rt-status" style="font-size:10px;margin-bottom:6px"></div>
-    </div>
-    <div id="rt-dashboard"></div>
-    <div id="rt-result"></div>`;
+
+    
+`;
   }
 
   // ═══ SALARY REGISTER TAB ═══
@@ -1470,14 +1401,9 @@ function render(){
         </div>
         <div id="vw-log-list" style="max-height:120px;overflow-y:auto;font-size:9px;color:#94a3b8">
           ${vwLogEntries.length?vwLogEntries.slice(0,50).map(l=>{
-            const code=l.code||l.action||'';
-            const name=l.name||'';
-            const eid=l.eid||'';
-            const dates=l.dates||(Array.isArray(l.days)?l.days.join(', '):(l.days||''));
-            let tm=l.time||'';
-            if(!tm&&l.dateTime){tm=(typeof l.dateTime==='number')?new Date(l.dateTime).toLocaleString('en-IN'):l.dateTime;}
+            const code=l.code||l.action||'';const name=l.name||'';const eid=l.eid||'';const dates=l.dates||'';
             return '<div style="padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03);display:flex;gap:6px;flex-wrap:wrap;font-size:9px">'
-            +'<span style="color:#4b5563;min-width:110px">'+tm+'</span>'
+            +'<span style="color:#4b5563;min-width:110px">'+(l.dateTime||l.time||'')+'</span>'
             +'<span style="color:#94a3b8;min-width:65px">'+eid+'</span>'
             +'<span style="color:#e2e8f0;min-width:100px;font-weight:500">'+name+'</span>'
             +'<span style="color:#f59e0b;font-weight:700;min-width:24px">'+code+'</span>'
@@ -1555,10 +1481,6 @@ function render(){
       </div>
     </div>`;
     setTimeout(()=>{ltRenderMonths();},0);
-  }
-  else if(S.tab==='dsr'){
-    h+=dsrRender();
-    setTimeout(()=>dsrCalcTotals(),0);
   }
 
   h+='</div>';
@@ -1754,8 +1676,7 @@ async function ltZipAll(list) {
   toast('Building ' + list.length + ' Word files...');
   for (const emp of list) {
     try {
-      const blob = await ltBuildDocx(emp);
-      const buf = await blob.arrayBuffer();
+      const buf = await ltBuildDocx(emp);
       const fname = 'Letter_' + emp.name.replace(/\s+/g,'_') + '_' + emp.eid + '.docx';
       zip.file(fname, buf);
     } catch(e) { console.error('docx error:', e); }
@@ -1774,12 +1695,13 @@ async function ltZipAll(list) {
 function ltMakeAndDownload(emp) {
   ltLoadDocx(async () => {
     try {
-      const blob = await ltBuildDocx(emp);
+      const buf = await ltBuildDocx(emp);
+      const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = 'Letter_' + emp.name.replace(/\s+/g,'_') + '_' + emp.eid + '.docx';
-      document.body.appendChild(a); a.click();
-      setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(a.href);},500);
+      a.click();
+      URL.revokeObjectURL(a.href);
       toast(emp.name + ' ka Word letter downloaded!');
     } catch(e) { toast('Error: ' + e.message, true); }
   });
@@ -1914,7 +1836,7 @@ async function ltBuildDocx(emp) {
     }]
   });
 
-  return await Packer.toBlob(doc);
+  return await Packer.toBuffer(doc);
 }
 
 // ── Build letter HTML ──
@@ -2554,118 +2476,6 @@ function filoDownload() {
   const ws4 = XLSX.utils.json_to_sheet(summaryRows);
   ws4['!cols'] = [{wch:36},{wch:10}];
   XLSX.utils.book_append_sheet(wb2, ws4, 'Summary');
-
-  // ── ANALYSIS SHEET ──────────────────────────────────────
-  // Daily breakdown: group filoData by inDate
-  var dailyMap = {};
-  filoData.forEach(function(r){
-    var d = r.inDate;
-    if(!dailyMap[d]) dailyMap[d]={date:d,total:0,P:0,U:0,SP:0,SU:0,SKIP:0};
-    dailyMap[d].total++;
-    if(r.code==='P')          dailyMap[d].P++;
-    else if(r.code==='U')     dailyMap[d].U++;
-    else if(r.code==='SHORT(P)') dailyMap[d].SP++;
-    else if(r.code==='SHORT(U)') dailyMap[d].SU++;
-    else if(r.code==='SKIPPED')  dailyMap[d].SKIP++;
-  });
-
-  // Sort dates
-  var sortedDates = Object.keys(dailyMap).sort(function(a,b){
-    // DD.MM.YYYY sort
-    var pa=a.split('.'), pb=b.split('.');
-    var da=new Date(+pa[2],+pa[1]-1,+pa[0]);
-    var db=new Date(+pb[2],+pb[1]-1,+pb[0]);
-    return da-db;
-  });
-
-  var analysisRows = [];
-
-  // Header section
-  analysisRows.push({'Metric':'=== DAILY BREAKDOWN ===','Value':'','Count':'','Percent':''});
-  analysisRows.push({'Metric':'Date','Value':'Bio OK (P+U+Short)','Count':'Skipped (Manual)','Percent':'Bio OK %'});
-
-  sortedDates.forEach(function(d){
-    var row = dailyMap[d];
-    var bioOK = row.P + row.U + row.SP + row.SU;
-    var pct = row.total > 0 ? ((bioOK/row.total)*100).toFixed(1)+'%' : '0%';
-    var skipPct = row.total > 0 ? ((row.SKIP/row.total)*100).toFixed(1)+'%' : '0%';
-    analysisRows.push({
-      'Metric': d,
-      'Value': bioOK + ' (P:'+row.P+' U:'+row.U+' Sh:'+( row.SP+row.SU)+')',
-      'Count': row.SKIP + ' (Manual/Skip) — ' + skipPct,
-      'Percent': pct + ' Bio OK'
-    });
-  });
-
-  // Monthly totals
-  var mTotal=filoData.length;
-  var mP=0,mU=0,mSP=0,mSU=0,mSKIP=0;
-  filoData.forEach(function(r){
-    if(r.code==='P') mP++;
-    else if(r.code==='U') mU++;
-    else if(r.code==='SHORT(P)') mSP++;
-    else if(r.code==='SHORT(U)') mSU++;
-    else if(r.code==='SKIPPED') mSKIP++;
-  });
-  var mBioOK = mP+mU+mSP+mSU;
-  function pct(n){ return mTotal>0?((n/mTotal)*100).toFixed(2)+'%':'0%'; }
-
-  analysisRows.push({'Metric':'','Value':'','Count':'','Percent':''});
-  analysisRows.push({'Metric':'=== MONTHLY SUMMARY ===','Value':'','Count':'','Percent':''});
-  analysisRows.push({'Metric':'Bio Code','Value':'Count','Count':'% of Total','Percent':''});
-  analysisRows.push({'Metric':'P — Present (7+ hrs)',    'Value':mP,    'Count':pct(mP),    'Percent':''});
-  analysisRows.push({'Metric':'U — Night Shift (7+ hrs)','Value':mU,    'Count':pct(mU),    'Percent':''});
-  analysisRows.push({'Metric':'SHORT(P) — Short Day',    'Value':mSP,   'Count':pct(mSP),   'Percent':''});
-  analysisRows.push({'Metric':'SHORT(U) — Short Night',  'Value':mSU,   'Count':pct(mSU),   'Percent':''});
-  analysisRows.push({'Metric':'SKIPPED — No In/Out',     'Value':mSKIP, 'Count':pct(mSKIP), 'Percent':'← Manual entry wale'});
-  analysisRows.push({'Metric':'─────────────────────','Value':'────','Count':'────','Percent':''});
-  analysisRows.push({'Metric':'TOTAL Entries',   'Value':mTotal, 'Count':'100%',   'Percent':''});
-  analysisRows.push({'Metric':'Bio OK (P+U+Short)','Value':mBioOK,'Count':pct(mBioOK),'Percent':'← Biometric se IN/OUT hua'});
-  analysisRows.push({'Metric':'Manual/Skipped',  'Value':mSKIP,  'Count':pct(mSKIP), 'Percent':'← IN/OUT nahi kiya'});
-
-  // RPT code breakdown (only if att file was uploaded)
-  var hasAtt = filoData.some(function(r){ return r.attCode !== undefined; });
-  if(hasAtt){
-    var attCounts = {};
-    var attTotal = 0;
-    filoData.forEach(function(r){
-      if(r.attCode === undefined) return;
-      var ac = r.attCode || '(blank)';
-      attCounts[ac] = (attCounts[ac]||0)+1;
-      attTotal++;
-    });
-    analysisRows.push({'Metric':'','Value':'','Count':'','Percent':''});
-    analysisRows.push({'Metric':'=== RPT REGISTER CODE BREAKDOWN ===','Value':'(SKIPPED+SHORT entries only)','Count':'','Percent':''});
-    analysisRows.push({'Metric':'RPT Code','Value':'Count','Count':'% of Problem Entries','Percent':'Matlab'});
-    var rptOrder=['P','U','S','WE','HD','HE','R','A','CL','EL','SL','LL','ML','HN','(blank)'];
-    var rptMeaning={'P':'Bio mismatch — manual P entry','U':'Bio mismatch — manual U entry',
-      'S':'Sunday','WE':'Weekly Off','HD':'Holiday','HE':'Half Holiday','R':'Rest Day',
-      'A':'Absent','CL':'Casual Leave','EL':'Earned Leave','SL':'Sick Leave',
-      'LL':'Loss of Pay','ML':'Maternity Leave','HN':'Half Night','(blank)':'Blank/Not marked'};
-    // Sort by rptOrder then remaining
-    var allCodes = Object.keys(attCounts);
-    allCodes.sort(function(a,b){
-      var ai=rptOrder.indexOf(a), bi=rptOrder.indexOf(b);
-      if(ai>=0&&bi>=0) return ai-bi;
-      if(ai>=0) return -1; if(bi>=0) return 1;
-      return a.localeCompare(b);
-    });
-    allCodes.forEach(function(code){
-      var cnt=attCounts[code];
-      var p=attTotal>0?((cnt/attTotal)*100).toFixed(2)+'%':'0%';
-      analysisRows.push({'Metric':code,'Value':cnt,'Count':p,'Percent':rptMeaning[code]||''});
-    });
-    analysisRows.push({'Metric':'Total Problem Entries','Value':attTotal,'Count':'100%','Percent':''});
-    var manualPct = attTotal>0?((mSKIP/attTotal)*100).toFixed(2)+'%':'0%';
-    analysisRows.push({'Metric':'','Value':'','Count':'','Percent':''});
-    analysisRows.push({'Metric':'IN/OUT % (Bio OK)','Value':mBioOK,'Count':pct(mBioOK),'Percent':'Biometric se properly IN/OUT kiya'});
-    analysisRows.push({'Metric':'Manual Entry % (Skipped)','Value':mSKIP,'Count':pct(mSKIP),'Percent':'IN/OUT nahi kiya — manually entry hui'});
-  }
-
-  var wsA = XLSX.utils.json_to_sheet(analysisRows,{header:['Metric','Value','Count','Percent']});
-  wsA['!cols'] = [{wch:32},{wch:34},{wch:26},{wch:36}];
-  XLSX.utils.book_append_sheet(wb2, wsA, 'Analysis');
-  // ── END ANALYSIS SHEET ──────────────────────────────────
 
   XLSX.writeFile(wb2, 'FirstInLastOut_Processed.xlsx');
   toast('Excel downloaded!');
@@ -3494,7 +3304,6 @@ function exportAllData(){
     bioraw:bioRawData||{},
     bioentries:bioEntryEntries||{},
     vwlog:vwLog||[],
-    dsrdata:dsrData||{catmap:{},entries:{}},
   };
   const json=JSON.stringify(backup);
   const blob=new Blob([json],{type:'application/json'});
@@ -3548,7 +3357,6 @@ function importAllData(input){
       if(backup.bioraw){bioRawData=backup.bioraw;LS.s('bioraw',bioRawData);}
       if(backup.bioentries){bioEntryEntries=backup.bioentries;LS.s('bioentries',bioEntryEntries);}
       if(backup.vwlog){vwLog=backup.vwlog;LS.s('vwlog',vwLog);}
-      if(backup.dsrdata){dsrData=backup.dsrdata;LS.s('dsrdata',dsrData);}
       
       // Also save to persistent storage
       try{pS('e',S.emps);pS('a',S.att);pS('h',S.hols);}catch{}
@@ -4634,9 +4442,7 @@ async function bioProcess(){
         <button class="btn bp" style="font-size:11px;padding:6px 14px" onclick="bioDownloadRoster('all')">Download All</button>
         <select class="inp" id="bio-pp-dl" style="max-width:140px;font-size:11px">${ppOpts}</select>
         <button class="btn bp" style="font-size:11px;padding:6px 14px;background:linear-gradient(135deg,#0d9488,#14b8a6)" onclick="bioDownloadRoster(document.getElementById('bio-pp-dl').value)">Download Pay Point</button>
-        <button class="btn bp" style="font-size:11px;padding:6px 14px;background:linear-gradient(135deg,#16a34a,#22c55e)" onclick="clerkWAPanel()">📱 Send to Clerks</button>
-      </div>
-      <div id="clerk-wa-panel" style="display:none;margin-top:8px"></div>`;
+      </div>`;
     }
     
     // Show filterable detail
@@ -4658,9 +4464,6 @@ async function bioProcess(){
     window._bioResults=results;
     window.bioFilter='all';
     bioShowResults();
-    bioShowSMSPanel();
-    sapInitSection();
-    sapAutoMerge();
     
     addLog('Biometric Upload',`P:${marked-night} U:${night} (${nightFixed} fixed) Short:${short} Skip:${skipped}`,`${marked} total marked`);
     toast(marked+' marked from biometric!');
@@ -4668,114 +4471,6 @@ async function bioProcess(){
     statusEl.innerHTML='<div class="cd" style="padding:14px;color:#f87171">Error: '+err.message+'</div>';
   }
 }
-
-// ─── CLERK WHATSAPP SETUP ────────────────────────────────────────
-const CLERK_PPS=['8L0912AG','8L0912BG','8L0912CG','8L0912GS','8L0912GU','8L0912SG','8L0934NE','8L09SAMD','8L09SAMG'];
-
-function clerkGetData(){
-  try{return JSON.parse(localStorage.getItem('clerk_wa_data')||'{}');}catch{return{};}
-}
-function clerkSaveData(d){localStorage.setItem('clerk_wa_data',JSON.stringify(d));}
-
-function clerkWAPanel(){
-  const panel=document.getElementById('clerk-wa-panel');
-  if(!panel)return;
-  if(panel.style.display!=='none'){panel.style.display='none';return;}
-  panel.style.display='block';
-  clerkRenderPanel();
-}
-
-function clerkRenderPanel(){
-  const panel=document.getElementById('clerk-wa-panel');
-  if(!panel)return;
-  const data=clerkGetData();
-  // Get pay points from loaded roster
-  const ppSet=new Set();
-  S.emps.forEach(function(e){if(e.p)ppSet.add(e.p);});
-  const pps=[...ppSet].sort();
-
-  let h=`<div class="cd"><div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04);display:flex;justify-content:space-between;align-items:center">
-    <div style="font-size:12px;font-weight:700;color:#22c55e">📱 Clerk WhatsApp Setup</div>
-    <button class="btn bg2" style="font-size:9px;padding:3px 8px" onclick="clerkSaveAll()">💾 Save All</button>
-  </div>
-  <div style="padding:10px 14px">
-    <div style="font-size:9px;color:#4b5563;margin-bottom:10px">Har pay point ka clerk name aur WhatsApp number daalo — ek baar save karo, hamesha ke liye save rahega.</div>
-    <div style="display:flex;flex-direction:column;gap:6px" id="clerk-rows">`;
-
-  pps.forEach(function(pp){
-    const d=data[pp]||{name:'',num:''};
-    h+=`<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;background:rgba(255,255,255,.03);padding:6px 8px;border-radius:6px">
-      <span style="font-size:10px;font-weight:700;color:#a5b4fc;min-width:80px">${pp}</span>
-      <input class="inp" id="clerk-name-${pp}" placeholder="Clerk Name" value="${d.name}" style="flex:1;font-size:10px;min-width:100px">
-      <input class="inp" id="clerk-num-${pp}" placeholder="WhatsApp No (10 digit)" value="${d.num}" style="flex:1;font-size:10px;min-width:110px" maxlength="10" type="tel">
-    </div>`;
-  });
-
-  h+=`</div></div>
-  <div style="padding:10px 14px;border-top:1px solid rgba(255,255,255,.04)">
-    <div style="font-size:11px;font-weight:700;color:#22c55e;margin-bottom:8px">📤 Send Excel via WhatsApp</div>
-    <div style="font-size:9px;color:#4b5563;margin-bottom:8px">Excel download hogi + WhatsApp khulega clerk ke number pe pre-filled message ke saath. File manually attach karo (2 sec).</div>
-    <div style="display:flex;flex-direction:column;gap:5px">`;
-
-  pps.forEach(function(pp){
-    const d=data[pp]||{name:'',num:''};
-    const empCount=S.emps.filter(function(e){return e.p===pp;}).length;
-    const hasNum=d.num&&d.num.length>=10;
-    h+=`<div style="display:flex;gap:6px;align-items:center;background:rgba(255,255,255,.02);padding:5px 8px;border-radius:5px">
-      <span style="font-size:10px;color:#94a3b8;flex:1">${pp} <span style="color:#4b5563">(${empCount} emp)</span>${d.name?'<br><span style="font-size:9px;color:#818cf8">'+d.name+'</span>':''}</span>
-      <button class="btn bp" style="font-size:10px;padding:4px 8px;background:linear-gradient(135deg,#0d9488,#14b8a6)" onclick="clerkDownloadPP('${pp}')">📥 Excel</button>
-      <button class="btn bp" style="font-size:10px;padding:4px 8px;background:linear-gradient(135deg,#16a34a,#25d366);${hasNum?'':'opacity:.4;cursor:not-allowed'}" ${hasNum?`onclick="clerkSendWA('${pp}')"`:''} title="${hasNum?'WhatsApp pe bhejo':'Number add karo pehle'}">💬 WA</button>
-    </div>`;
-  });
-
-  h+=`</div></div></div>`;
-  panel.innerHTML=h;
-}
-
-function clerkSaveAll(){
-  const data=clerkGetData();
-  const ppSet=new Set();S.emps.forEach(function(e){if(e.p)ppSet.add(e.p);});
-  [...ppSet].forEach(function(pp){
-    const nameEl=document.getElementById('clerk-name-'+pp);
-    const numEl=document.getElementById('clerk-num-'+pp);
-    if(nameEl||numEl){
-      data[pp]={name:(nameEl?nameEl.value:'').trim(),num:(numEl?numEl.value.replace(/\D/g,'').slice(-10):'')};
-    }
-  });
-  clerkSaveData(data);
-  toast('Clerk data saved!');
-  clerkRenderPanel();
-}
-
-function clerkDownloadPP(pp){
-  bioDownloadRoster(pp);
-}
-
-function clerkSendWA(pp){
-  const data=clerkGetData();
-  const d=data[pp]||{};
-  const num=d.num;
-  if(!num||num.length<10){toast('Pehle number save karo!',false);return;}
-  // Get date
-  const bioData=window._bioData||{};
-  const firstEid=Object.keys(bioData)[0];
-  const date=firstEid?bioData[firstEid].date||'':'';
-  let dStr=date;
-  if(/^\d{4}-\d{2}-\d{2}$/.test(date)){const p=date.split('-');dStr=p[2]+'/'+p[1]+'/'+p[0];}
-  const empCount=S.emps.filter(function(e){return e.p===pp;}).length;
-  const msg='Katkona 1%262 Incline%0A'
-    +'Pay Point: '+pp+'%0A'
-    +'Date: '+dStr+'%0A'
-    +'Employees: '+empCount+'%0A'
-    +'Biometric attendance Excel file attached karo.%0A'
-    +'-Attendance Section';
-  const waUrl='https://wa.me/91'+num+'?text='+msg;
-  // Download Excel first
-  bioDownloadRoster(pp);
-  // Open WhatsApp after small delay
-  setTimeout(function(){window.open(waUrl,'_blank');},800);
-}
-// ─────────────────────────────────────────────────────────────────
 
 function bioDownloadRoster(ppFilter){
   const bioData=window._bioData;
@@ -5177,13 +4872,8 @@ function rosterUpload(){
         const eid=String(row['EMPLOYEE ID']||row['Employee ID']||row.EmployeeID||row['Emp ID']||row.employee_id||'').trim();
         const name=String(row['EMPLOYEE NAME']||row['Employee Name']||row.Name||row.name||row.employee_name||'').trim().toUpperCase();
         const pp=String(row['Pay_Point Name']||row['Pay Point']||row.PayPoint||row.pay_point||'').trim();
-        // Read ct (Surface/Underground) if present in Excel
-        const ctRaw=String(row['Surface/UG']||row['Contract']||row['CT']||row['ct']||'').trim();
-        const ct=ctRaw.toLowerCase().startsWith('s')?'S':ctRaw.toLowerCase().startsWith('u')?'U':'';
-        // Read posting if present
-        const posting=String(row['Posting']||row['POSTING']||row['posting']||'').trim();
         if(!eid||!name)return;
-        newEmps.push({s:sn,i:eid,n:name,p:pp,_ct:ct,_posting:posting});
+        newEmps.push({s:sn,i:eid,n:name,p:pp});
       });
       
       if(!newEmps.length){statusEl.innerHTML='<div style="color:#f87171;font-size:11px">No valid employees found in file!</div>';return;}
@@ -5226,26 +4916,8 @@ function rosterUpload(){
       
       if(!confirm(msg))return;
       
-      // Apply: MERGE — preserve existing sequence, ct, posting for known employees
-      // Step 1: existing employees in their CURRENT ORDER (preserve sequence)
-      const finalEmps=[];
-      S.emps.forEach(function(emp){
-        if(!newMap[emp.i])return; // removed — skip
-        const newE=newMap[emp.i];
-        finalEmps.push(Object.assign({},emp,{
-          n:newE.n,                                    // update name
-          p:newE.p,                                    // update pay point
-          ct:newE._ct||emp.ct||'U',                   // Excel ct > existing ct > default U
-          posting:newE._posting||emp.posting||''       // Excel posting > existing posting
-        }));
-      });
-      // Step 2: new employees at end
-      newEmps.forEach(function(emp){
-        if(!oldMap[emp.i]){
-          finalEmps.push({s:emp.s,i:emp.i,n:emp.n,p:emp.p,ct:emp._ct||'U',posting:emp._posting||''});
-        }
-      });
-      S.emps=finalEmps;
+      // Apply: replace roster with new file data
+      S.emps=newEmps;
       saveE();pS('e',S.emps);
       
       statusEl.innerHTML=`<div style="background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.15);border-radius:8px;padding:10px;margin-top:4px">
@@ -5746,7 +5418,7 @@ function vwRender(){
   const dim=vwData.dim;
 
   // ── Code totals for summary row ──
-  const TOTAL_CODES=['P','P*','U','U*','S','S*','WE','HD','HE','OD','O/T','CL','SL','EL','A','R','HN','LL'];
+  const TOTAL_CODES=['P','P*','U','U*','S','S*','WE','HD','HE','O/T','CL','SL','EL','A','R','HN','LL'];
   const totals={};
   TOTAL_CODES.forEach(c=>totals[c]=0);
   fil.forEach(r=>{
@@ -5799,48 +5471,32 @@ function vwRender(){
   h+=`</tbody></table></div>`;
 
   // ── CODE SUMMARY BOX ──
-  // ── Blank count ──
-  let totalBlanks=0;
-  fil.forEach(r=>{for(let d=1;d<=dim;d++){if(!r.days[d])totalBlanks++;}});
-
   const summCodes=[
-    {code:'P',   label:'Present',     clr:'#16a34a', always:true},
-    {code:'U',   label:'Night',       clr:'#818cf8', always:true},
-    {code:'S',   label:'Sunday',      clr:'#a855f7', always:false},
-    {code:'WE',  label:'Week End',    clr:'#6366f1', always:true},
-    {code:'OD',  label:'On Duty',     clr:'#06b6d4', always:true},
-    {code:'HD',  label:'Holiday',     clr:'#f97316', always:true},
-    {code:'HE',  label:'Holiday Eve', clr:'#8b5cf6', always:false},
-    {code:'HN',  label:'HN',          clr:'#22d3ee', always:false},
-    {code:'CL',  label:'CL',          clr:'#3b82f6', always:true},
-    {code:'SL',  label:'SL',          clr:'#ec4899', always:true},
-    {code:'EL',  label:'EL',          clr:'#14b8a6', always:true},
-    {code:'R',   label:'Rest',        clr:'#64748b', always:true},
-    {code:'A',   label:'Absent',      clr:'#ef4444', always:true},
-    {code:'O/T', label:'O/T',         clr:'#f59e0b', always:false},
-    {code:'LL',  label:'LL',          clr:'#94a3b8', always:false},
+    {code:'P', label:'Present', clr:'#16a34a'},
+    {code:'U', label:'Night', clr:'#818cf8'},
+    {code:'S', label:'Sunday', clr:'#a855f7'},
+    {code:'WE', label:'Week End', clr:'#6366f1'},
+    {code:'HD', label:'Holiday', clr:'#f97316'},
+    {code:'HE', label:'Holiday Eve', clr:'#8b5cf6'},
+    {code:'O/T', label:'O/T', clr:'#f59e0b'},
+    {code:'HN', label:'HN', clr:'#06b6d4'},
+    {code:'A', label:'Absent', clr:'#ef4444'},
+    {code:'CL', label:'CL', clr:'#3b82f6'},
+    {code:'SL', label:'SL', clr:'#ec4899'},
+    {code:'EL', label:'EL', clr:'#14b8a6'},
+    {code:'R', label:'Rest', clr:'#64748b'},
   ];
-  h+=`<div style="padding:8px 10px;border-top:1px solid rgba(99,102,241,.1)">`;
-  // Blank count — prominent
-  h+=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;align-items:center">`;
-  h+=`<div style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);border-radius:6px;padding:4px 12px;text-align:center">`;
-  h+=`<div style="font-size:9px;color:#f87171">BLANK</div>`;
-  h+=`<div style="font-size:15px;font-weight:800;color:#f87171">${totalBlanks}</div>`;
-  h+=`<div style="font-size:8px;color:#4b5563">Empty cells</div></div>`;
-  h+=`<div style="font-size:9px;color:#4b5563">Total employees: <b style="color:#a5b4fc">${fil.length}</b> &nbsp;·&nbsp; Days: <b style="color:#a5b4fc">${dim}</b> &nbsp;·&nbsp; Total cells: <b style="color:#a5b4fc">${fil.length*dim}</b></div>`;
-  h+=`</div>`;
-  h+=`<div style="display:flex;flex-wrap:wrap;gap:6px">`;
+  h+=`<div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px;border-top:1px solid rgba(99,102,241,.1)">`;
   summCodes.forEach(sc=>{
     const cnt=totals[sc.code]+(sc.code==='P'?totals['P*']:0)+(sc.code==='U'?totals['U*']:0)+(sc.code==='S'?totals['S*']:0);
-    if(cnt===0&&!sc.always)return;
-    const dim2=cnt===0?'opacity:.3':'';
-    h+=`<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:4px 10px;text-align:center;${dim2}">`;
+    if(cnt===0)return;
+    h+=`<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:4px 10px;text-align:center">`;
     h+=`<div style="font-size:11px;font-weight:700;color:${sc.clr}">${sc.code}</div>`;
     h+=`<div style="font-size:13px;font-weight:800;color:${sc.clr}">${cnt}</div>`;
     h+=`<div style="font-size:8px;color:#4b5563">${sc.label}</div>`;
     h+=`</div>`;
   });
-  h+=`</div></div>`;
+  h+=`</div>`;
   h+=`</div>`;
 
   document.getElementById('vw-grid').innerHTML=h;
@@ -5912,61 +5568,15 @@ function vwRenderBulkPanel(eid){
     else filledDays.push({d,code:row.days[d]});
   }
   
-  var allFilled=!blankDays.length;
-  var filledNotice='';
-  if(allFilled){
-    filledNotice='<div style="padding:8px;color:#22c55e;font-size:11px;font-weight:600;background:rgba(34,197,94,.08);border-radius:6px;margin-bottom:8px">✅ Sab dates filled hain! Neeche calendar mein kisi bhi date pe tap karke code change/edit kar sakte ho. <button class="btn bg2" style="font-size:9px;padding:3px 8px;margin-left:6px" onclick="vwNextEmp()">Next ▶</button></div>';
-    // Auto voice mode — next employee
-    if(window._autoVoiceMode){setTimeout(function(){vwNextEmp();},800);}
-  }
-
-  // Auto Voice Mode — system puchega automatically
-  if(window._autoVoiceMode){
-    setTimeout(function(){vwAutoAsk(eid,row,blankDays);},300);
+  if(!blankDays.length){
+    panel.innerHTML='<div style="padding:8px;color:#22c55e;font-size:11px;font-weight:600">\u2705 No blank dates! All filled. <button class="btn bg2" style="font-size:9px;padding:3px 8px;margin-left:6px" onclick="vwNextEmp()">Next \u25b6</button></div>';
+    return;
   }
   
   let h='<div style="margin-top:8px">';
-  h+=filledNotice;
-
-  // Code totals for this employee
-  const codeCounts={};
-  filledDays.forEach(function(fd){codeCounts[fd.code]=(codeCounts[fd.code]||0)+1;});
-  const showCodes=['P','U','S','WE','O/T','HD','HE','CL','SL','EL','OD','R','A'];
-  const codeClrMap={'P':'#16a34a','U':'#f59e0b','S':'#a855f7','WE':'#6366f1','O/T':'#f59e0b','HD':'#f97316','HE':'#8b5cf6','CL':'#3b82f6','SL':'#ec4899','EL':'#14b8a6','OD':'#0ea5e9','R':'#64748b','A':'#ef4444'};
-  h+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">';
-  showCodes.forEach(function(c){
-    const cnt=codeCounts[c]||0;
-    if(!cnt)return;
-    h+='<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:5px;padding:2px 8px;text-align:center">'
-      +'<div style="font-size:9px;font-weight:700;color:'+(codeClrMap[c]||'#94a3b8')+'">'+c+'</div>'
-      +'<div style="font-size:12px;font-weight:800;color:'+(codeClrMap[c]||'#94a3b8')+'">'+cnt+'</div>'
-      +'</div>';
-  });
-  h+='</div>';
-
-  // Undo last action button (prominent)
-  var lastEmpLog=vwLog.filter(function(l){return l.eid===eid;});
-  if(lastEmpLog.length){
-    var last=lastEmpLog[0];
-    var lastDay=last.days&&last.days[0]?last.days[0]:'?';
-    var lastIdx=vwLog.indexOf(last);
-    h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding:6px 8px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.15);border-radius:6px">'
-      +'<span style="font-size:10px;color:#94a3b8">Last: Day <b style="color:#f59e0b">'+lastDay+'</b> \u2192 <b style="color:#f59e0b">'+last.code+'</b></span>'
-      +'<button onclick="vwUndoByIdx('+lastIdx+',\''+eid+'\')" class="btn" style="font-size:10px;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);padding:3px 10px;border-radius:4px">\u21a9 Undo</button>'
-      +'</div>';
-  }
   
   // Blank dates with checkboxes
-  h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">';
-  h+='<div style="font-size:10px;color:#f59e0b;font-weight:600">Blank Dates ('+blankDays.length+'):</div>';
-  h+='<button id="voice-btn-'+eid+'" onclick="vwVoiceStart(\''+eid+'\')" style="background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;border-radius:20px;padding:4px 10px;color:#fff;font-size:10px;cursor:pointer">🎤 Bolo</button>';
-  h+='<button onclick="vwToggleAutoVoice(\''+eid+'\')" id="auto-voice-btn" style="background:'+(window._autoVoiceMode?'linear-gradient(135deg,#16a34a,#22c55e)':'rgba(255,255,255,.08)')+';border:none;border-radius:20px;padding:4px 10px;color:#fff;font-size:10px;cursor:pointer">'+(window._autoVoiceMode?'🤖 Auto ON':'🤖 Auto')+'</button>';
-  h+='</div>';
-  h+='<div style="display:flex;gap:4px;margin-bottom:4px">';
-  h+='<input id="voice-text-'+eid+'" class="inp" placeholder=\'Type karo: "5 ka rest" ya "10 se 15 ka CL"\' style="flex:1;font-size:10px" onkeydown="if(event.key===\'Enter\')vwVoiceTextSubmit(\''+eid+'\')">';
-  h+='<button onclick="vwVoiceTextSubmit(\''+eid+'\')" style="background:linear-gradient(135deg,#0d9488,#14b8a6);border:none;border-radius:6px;padding:4px 10px;color:#fff;font-size:10px;cursor:pointer">✓</button>';
-  h+='</div>';
-  h+='<div id="voice-status-'+eid+'" style="font-size:10px;color:#818cf8;min-height:14px;margin-bottom:4px"></div>';
+  h+='<div style="font-size:10px;color:#f59e0b;font-weight:600;margin-bottom:4px">Blank Dates ('+blankDays.length+'):</div>';
   h+='<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:6px">';
   h+='<button style="background:none;border:none;color:#818cf8;font-size:8px;cursor:pointer;text-decoration:underline;padding:0;margin-right:4px" onclick="vwCheckAllBlanks('+JSON.stringify(blankDays)+')">All</button>';
   h+='<button style="background:none;border:none;color:#818cf8;font-size:8px;cursor:pointer;text-decoration:underline;padding:0;margin-right:6px" onclick="vwUncheckAllBlanks()">None</button>';
@@ -5990,7 +5600,7 @@ function vwRenderBulkPanel(eid){
   // Blank offset cells
   var fd=new Date(vwData.yr,vwData.mon,1).getDay();
   for(var fi=0;fi<fd;fi++) h+='<div></div>';
-  // All days — both blank AND filled are now clickable (for editing)
+  // All days
   for(var dd=1;dd<=vwData.dim;dd++){
     var code=row.days[dd]||'';
     var isBlank=!code;
@@ -5999,11 +5609,9 @@ function vwRenderBulkPanel(eid){
     var codeClr=codeColors2[code]||'#94a3b8';
     var bg=isChk?'rgba(245,158,11,.25)':isBlank?'rgba(239,68,68,.06)':'rgba(255,255,255,.03)';
     var border=isChk?'1px solid #f59e0b':isBlank?'1px solid rgba(239,68,68,.2)':'1px solid rgba(255,255,255,.06)';
-    // Both blank and filled are clickable now
-    h+='<div style="text-align:center;border-radius:3px;padding:2px 1px;cursor:pointer;background:'+bg+';border:'+border+'"';
-    h+=' onclick="vwToggleBlank('+dd+','+(!isChk)+',\''+eid+'\')"';
-    h+=' title="'+(isBlank?'Blank — tap to select':code+' — tap to select & change')+'">';
-    h+='<div style="font-size:9px;font-weight:600;color:'+(isChk?'#f59e0b':'#64748b')+'">'+dd+'</div>';
+    h+='<div style="text-align:center;border-radius:3px;padding:2px 1px;cursor:'+(isBlank?'pointer':'default')+';background:'+bg+';border:'+border+'"';
+    if(isBlank) h+=' onclick="vwToggleBlank('+dd+','+(!isChk)+',\''+eid+'\')"';
+    h+='><div style="font-size:9px;font-weight:600;color:'+(isChk?'#f59e0b':'#64748b')+'">'+dd+'</div>';
     h+='<div style="font-size:8px;font-weight:700;color:'+(isBlank?(isChk?'#f59e0b':'#374151'):codeClr)+'">'+(code||'—')+'</div></div>';
   }
   h+='</div>';
@@ -6204,475 +5812,6 @@ function vwUpdateKbDisplay() {
 }
 
 
-// ─── VOICE INPUT FOR BULK LEAVE ──────────────────────────────────
-var _voiceRecognition=null;
-var _voiceEid=null;
-
-function vwVoiceTextSubmit(eid){
-  var el=document.getElementById('voice-text-'+eid);
-  if(!el||!el.value.trim())return;
-  vwVoiceParse(el.value.toLowerCase().trim(),eid);
-  el.value='';
-}
-
-function vwToggleAutoVoice(eid){
-  window._autoVoiceMode=!window._autoVoiceMode;
-  if(window._autoVoiceMode){
-    toast('🤖 Auto Voice Mode ON!');
-    vwAutoAsk(eid, vwData&&vwData.rows&&vwData.rows.find(function(r){return r.eid===eid;}),
-      (function(){var b=[];if(vwData)for(var d=1;d<=vwData.dim;d++){var rw=vwData.rows.find(function(r){return r.eid===eid;});if(rw&&!rw.days[d])b.push(d);}return b;})());
-  } else {
-    window.speechSynthesis&&window.speechSynthesis.cancel();
-    if(_voiceRecognition){_voiceRecognition.stop();_voiceRecognition=null;}
-    toast('Auto Voice Mode OFF');
-    vwRenderBulkPanel(eid);
-  }
-}
-
-var _autoCurrentDay=null;   // Current date being asked
-var _autoRemainingDays=[];  // Queue of blank days
-var _autoCurrentEid=null;
-
-function vwAutoAsk(eid,row,blankDays){
-  if(!window._autoVoiceMode||!row||!blankDays||!blankDays.length){
-    // Sab ho gaya — next employee
-    if(window._autoVoiceMode&&(!blankDays||!blankDays.length)){
-      vwSpeak('Sab dates ho gayi. Agla employee.');
-      setTimeout(function(){vwNextEmp();},1500);
-    }
-    return;
-  }
-
-  // Setup queue
-  _autoCurrentEid=eid;
-  _autoRemainingDays=[...blankDays].sort((a,b)=>a-b);
-
-  const name=row.name||eid;
-  const firstName=name.split(' ')[0];
-  // Intro then ask first date
-  vwSpeak(firstName+' ke '+blankDays.length+' blank dates hain.',function(){
-    vwAskNextDay(eid,row);
-  });
-
-  const statusEl=document.getElementById('voice-status-'+eid);
-  if(statusEl)statusEl.innerHTML='<span style="color:#22c55e">🤖 '+firstName+' — '+blankDays.length+' blank dates</span>';
-}
-
-function vwAskNextDay(eid,row){
-  if(!window._autoVoiceMode)return;
-
-  // Refresh remaining from actual row (some may have been filled)
-  _autoRemainingDays=_autoRemainingDays.filter(function(d){return !row.days[d];});
-
-  if(!_autoRemainingDays.length){
-    vwSpeak('Ho gaya. Agla employee.',function(){
-      setTimeout(function(){if(window._autoVoiceMode)vwNextEmp();},600);
-    });
-    return;
-  }
-
-  _autoCurrentDay=_autoRemainingDays[0];
-  const statusEl=document.getElementById('voice-status-'+eid);
-  if(statusEl)statusEl.innerHTML='<span style="color:#f59e0b">🤖 Din <b>'+_autoCurrentDay+'</b> — kya bharna hai? (skip bolo chhodne ke liye)</span>';
-
-  vwSpeak('Din '+_autoCurrentDay+'. Kya bharna hai?',function(){
-    if(window._autoVoiceMode) vwAutoListen(eid);
-  });
-}
-
-function vwSpeak(text,onDone){
-  if(!window.speechSynthesis){if(onDone)onDone();return;}
-  window.speechSynthesis.cancel();
-  const utt=new SpeechSynthesisUtterance(text);
-  utt.lang='hi-IN';utt.rate=1.15;utt.pitch=1;utt.volume=1;
-  if(onDone)utt.onend=onDone;
-  window.speechSynthesis.speak(utt);
-}
-
-function vwAutoListen(eid){
-  if(!window._autoVoiceMode)return;
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR)return;
-
-  const r=new SR();
-  r.lang='en-IN';
-  r.continuous=false;
-  r.interimResults=false;
-  _voiceRecognition=r;
-
-  const statusEl=document.getElementById('voice-status-'+eid);
-
-  r.onresult=function(e){
-    const transcript=e.results[0][0].transcript.toLowerCase().trim();
-    if(statusEl)statusEl.innerHTML='<span style="color:#818cf8">Suna: "'+transcript+'" (Din '+_autoCurrentDay+')</span>';
-    _voiceRecognition=null;
-    vwAutoApplyToCurrentDay(transcript,eid);
-  };
-
-  r.onerror=function(e){
-    _voiceRecognition=null;
-    if(e.error==='no-speech'){
-      setTimeout(function(){if(window._autoVoiceMode)vwAutoListen(eid);},400);
-    }
-  };
-
-  r.onend=function(){_voiceRecognition=null;};
-  try{r.start();}catch(e){}
-}
-
-function vwAutoApplyToCurrentDay(text,eid){
-  const row=vwData&&vwData.rows&&vwData.rows.find(function(r){return r.eid===eid;});
-  if(!row){return;}
-  const day=_autoCurrentDay;
-  const statusEl=document.getElementById('voice-status-'+eid);
-
-  // SKIP / CHHODO / BLANK — leave this date empty
-  if(/\b(skip|chhodo|chodo|chhod|blank|khali|khaali|next|aage|छोड़ो|स्किप)\b/.test(text)){
-    if(statusEl)statusEl.innerHTML='<span style="color:#f59e0b">⏭️ Din '+day+' skip kiya (blank)</span>';
-    vwSpeak('Din '+day+' chhoda.');
-    _autoRemainingDays=_autoRemainingDays.filter(function(d){return d!==day;});
-    setTimeout(function(){vwAskNextDay(eid,row);},900);
-    return;
-  }
-
-  // Detect code
-  const detectedCode=vwDetectCode(text);
-  if(!detectedCode){
-    if(statusEl)statusEl.innerHTML='<span style="color:#f87171">Code samjha nahi: "'+text+'" — dobara bolo ya skip bolo</span>';
-    vwSpeak('Samjha nahi. Dobara bolo.',function(){
-      if(window._autoVoiceMode)vwAutoListen(eid);
-    });
-    return;
-  }
-
-  // Detect if user spoke a RANGE or MULTIPLE dates (bulk within auto mode)
-  const spokenDays=vwExtractDays(text);
-  let targetDays=[];
-
-  if(spokenDays.length){
-    // User specified explicit dates/range → use those
-    targetDays=spokenDays.filter(function(d){return d>=1&&d<=vwData.dim&&!row.days[d];});
-  } else {
-    // No dates spoken → apply only to current asked day
-    targetDays=[day];
-  }
-
-  // Apply
-  const applied=[];
-  targetDays.forEach(function(d){
-    if(d>=1&&d<=vwData.dim&&!row.days[d]){
-      row.days[d]=detectedCode;
-      applied.push(d);
-    }
-  });
-
-  if(applied.length){
-    vwLog.unshift({eid,name:(row.name||''),code:detectedCode,days:applied,dates:applied.join(', '),dateTime:Date.now(),mon:vwData.mon,yr:vwData.yr});
-    LS.s('vwlog',vwLog);
-    vwUpdateLogDisplay();
-  }
-
-  // Remove all applied days from queue
-  _autoRemainingDays=_autoRemainingDays.filter(function(d){return !applied.includes(d);});
-
-  const rangeMsg=applied.length>1?'Din '+applied[0]+' se '+applied[applied.length-1]+' → '+detectedCode:'Din '+applied[0]+' → '+detectedCode;
-  if(statusEl)statusEl.innerHTML='<span style="color:#16a34a">✅ '+rangeMsg+'</span>';
-  if(applied.length>1)vwSpeak(applied.length+' din '+detectedCode+' ho gaya.');
-
-  setTimeout(function(){
-    vwRenderBulkPanel(eid);
-    vwRender();
-    if(window._autoVoiceMode) vwAskNextDay(eid,row);
-  },300);
-}
-
-// Extract days from spoken text (range or list)
-function vwExtractDays(text){
-  const numWords={'ek':1,'do':2,'teen':3,'tin':3,'char':4,'paanch':5,'panch':5,'chhe':6,'saat':7,'sat':7,'aath':8,'nau':9,'das':10,
-    'gyarah':11,'barah':12,'terah':13,'chaudah':14,'pandrah':15,'solah':16,'satrah':17,'atharah':18,'unnees':19,'bees':20,
-    'ikkis':21,'bais':22,'teis':23,'chaubis':24,'pachchis':25,'chhabbis':26,'sattaees':27,'athaees':28,'untees':29,'tees':30,'ikattis':31,
-    'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,
-    'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,'twenty':20,'thirty':30};
-  let processed=' '+text.toLowerCase()+' ';
-  for(const [w,n] of Object.entries(numWords)){
-    processed=processed.replace(new RegExp('\\b'+w+'\\b','g'),' '+n+' ');
-  }
-  const days=[];
-  // Range: "23 se 31" / "23 to 31" / "23-31"
-  const rangeMatch=processed.match(/(\d+)\s*(?:se|to|-|तक)\s*(\d+)/);
-  if(rangeMatch){
-    const from=parseInt(rangeMatch[1]),to=parseInt(rangeMatch[2]);
-    for(let i=Math.min(from,to);i<=Math.max(from,to);i++)days.push(i);
-    return days;
-  }
-  // Individual numbers
-  const nums=[...processed.matchAll(/\b(\d{1,2})\b/g)].map(m=>parseInt(m[1])).filter(n=>n>=1&&n<=31);
-  return nums;
-}
-
-// Shared code detection (used by both free-form and auto mode)
-function vwDetectCode(text){
-  text=text.toLowerCase().replace(/[।,\.]/g,' ').trim();
-  const codeList=[
-    {keys:['on duty','onduty','on-duty','od'],code:'OD'},
-    {keys:['holiday eve','he'],code:'HE'},
-    {keys:['weekly off','week end','weekend','weekly','we','hafta'],code:'WE'},
-    {keys:['holiday','hd','chutti divas'],code:'HD'},
-    {keys:['earned leave','el','arjit','earned'],code:'EL'},
-    {keys:['casual leave','cl','aakashmik','kashmik','casual'],code:'CL'},
-    {keys:['sick leave','sl','bimari','medical','sick'],code:'SL'},
-    {keys:['rest','aar','r','vishram','aaram'],code:'R'},
-    {keys:['absent','a','anupasthit'],code:'A'},
-    {keys:['night','u','raat'],code:'U'},
-    {keys:['sunday','s','sanday','sun','ravivar'],code:'S'},
-    {keys:['present','p','hazir','upasthit','pee'],code:'P'},
-    {keys:['late leave','ll'],code:'LL'}
-  ];
-  for(const item of codeList){
-    for(const key of item.keys){
-      if(key.length===1){if(new RegExp('\\b'+key+'\\b').test(text))return item.code;}
-      else{if(text.includes(key))return item.code;}
-    }
-  }
-  return null;
-}
-
-function vwVoiceStart(eid){
-  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){
-    toast('Browser voice support nahi hai! Chrome use karo.',false);return;
-  }
-  const btn=document.getElementById('voice-btn-'+eid);
-  const statusEl=document.getElementById('voice-status-'+eid);
-
-  // Stop if already running
-  if(_voiceRecognition){
-    _voiceRecognition.stop();
-    _voiceRecognition=null;
-    _voiceEid=null;
-    if(btn){btn.style.background='linear-gradient(135deg,#7c3aed,#a855f7)';btn.innerHTML='🎤 Bolo';}
-    if(statusEl)statusEl.innerHTML='<span style="color:#64748b">Mic band kiya.</span>';
-    return;
-  }
-
-  _voiceEid=eid;
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  const r=new SR();
-  r.lang='en-IN';
-  r.continuous=true;
-  r.interimResults=true;
-  _voiceRecognition=r;
-
-  // Mic sound mute karne ka trick — silent audio context
-  try{
-    var ctx=new (window.AudioContext||window.webkitAudioContext)();
-    var osc=ctx.createOscillator();
-    var gain=ctx.createGain();
-    gain.gain.value=0; // volume = 0 (mute)
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    setTimeout(function(){osc.stop();ctx.close();},200);
-  }catch(e){}
-
-  if(btn){btn.style.background='linear-gradient(135deg,#dc2626,#ef4444)';btn.innerHTML='🔴 Roko';}
-  if(statusEl)statusEl.innerHTML='<span style="color:#22c55e">🎤 Bol raha hoon... (Roko dabao band karne ke liye)</span>';
-
-  r.onresult=function(e){
-    // Only process final results
-    for(var i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal){
-        var transcript=e.results[i][0].transcript;
-        var txtEl=document.getElementById('voice-text-'+eid);
-        if(txtEl)txtEl.value=transcript;
-        if(statusEl)statusEl.innerHTML='<span style="color:#818cf8">🎤 "'+transcript+'"</span>';
-        vwVoiceParse(transcript.toLowerCase().trim(),eid);
-      }
-    }
-  };
-
-  r.onerror=function(e){
-    if(e.error==='no-speech')return; // Ignore silence — continuous mode mein normal hai
-    var msg=e.error==='network'?'Network error — box mein type karo':
-            e.error==='not-allowed'?'Mic permission do!':e.error;
-    if(statusEl)statusEl.innerHTML='<span style="color:#f87171">'+msg+'</span>';
-    if(e.error!=='no-speech'&&e.error!=='aborted'){vwVoiceReset(eid);}
-  };
-
-  r.onend=function(){
-    // Auto-restart agar abhi bhi chalu hai (Chrome mein continuous mode timeout hota hai)
-    if(_voiceRecognition){
-      try{_voiceRecognition.start();}catch(err){}
-    }
-  };
-
-  r.start();
-}
-
-function vwVoiceReset(eid){
-  _voiceRecognition=null;
-  _voiceEid=null;
-  const btn=document.getElementById('voice-btn-'+(eid||''));
-  if(btn){btn.style.background='linear-gradient(135deg,#7c3aed,#a855f7)';btn.innerHTML='🎤 Bolo';}
-}
-
-function vwVoiceParse(text,eid){
-  const statusEl=document.getElementById('voice-status-'+eid);
-  if(statusEl)statusEl.innerHTML='<span style="color:#818cf8">Parsing: "'+text+'"</span>';
-
-  // Normalize — lowercase, remove punctuation
-  text=text.toLowerCase().replace(/[।,\.]/g,' ').trim();
-
-  // ── CODE DETECTION ──
-  // Priority order — longer phrases first to avoid partial matches
-  const codeList=[
-    {keys:['on duty','onduty','on-duty','ओडी','od'],code:'OD'},
-    {keys:['holiday eve','he','holiday evening'],code:'HE'},
-    {keys:['weekly off','week end','weekend','weekly','we','hafta','haftik'],code:'WE'},
-    {keys:['holiday','hd','avkash divas','chutti divas'],code:'HD'},
-    {keys:['earned leave','el','arjit','earned'],code:'EL'},
-    {keys:['casual leave','cl','aakashmik','kashmik','casual'],code:'CL'},
-    {keys:['sick leave','sl','bimari','medical','sick'],code:'SL'},
-    {keys:['rest','aar','r','vishram','rest day','aaram'],code:'R'},
-    {keys:['absent','a','anupasthit','abscent'],code:'A'},
-    {keys:['night','u','raat','night shift'],code:'U'},
-    {keys:['sunday','s','sanday','sun','ravivar','रविवार'],code:'S'},
-    {keys:['present','p','hazir','upasthit','pee'],code:'P'},
-    {keys:['late leave','ll'],code:'LL'},
-  ];
-
-  let detectedCode=null;
-  for(const item of codeList){
-    for(const key of item.keys){
-      // Word boundary check for single chars
-      if(key.length===1){
-        if(new RegExp('\\b'+key+'\\b').test(text)){detectedCode=item.code;break;}
-      } else {
-        if(text.includes(key)){detectedCode=item.code;break;}
-      }
-    }
-    if(detectedCode)break;
-  }
-
-  // ── NUMBER DETECTION ──
-  // Hindi/Hinglish number words
-  const numWords={
-    'ek':1,'one':1,'do':2,'two':2,'teen':3,'tin':3,'three':3,
-    'char':4,'four':4,'paanch':5,'panch':5,'five':5,
-    'chhe':6,'chhah':6,'six':6,'saat':7,'sat':7,'seven':7,
-    'aath':8,'eight':8,'nau':9,'nine':9,'das':10,'ten':10,
-    'gyarah':11,'eleven':11,'barah':12,'twelve':12,
-    'terah':13,'thirteen':13,'chaudah':14,'fourteen':14,
-    'pandrah':15,'fifteen':15,'solah':16,'sixteen':16,
-    'satrah':17,'seventeen':17,'atharah':18,'eighteen':18,
-    'unnees':19,'nineteen':19,'bees':20,'twenty':20,
-    'ikkis':21,'twenty one':21,'bais':22,'twenty two':22,
-    'teis':23,'twenty three':23,'chaubis':24,'twenty four':24,
-    'pachchis':25,'twenty five':25,'chhabbis':26,'twenty six':26,
-    'sattaees':27,'twenty seven':27,'athaees':28,'twenty eight':28,
-    'untees':29,'twenty nine':29,'tees':30,'thirty':30,
-    'ikattis':31,'thirty one':31
-  };
-
-  let processed=text;
-  // Replace word numbers with digits
-  for(const [word,num] of Object.entries(numWords)){
-    processed=processed.replace(new RegExp('\\b'+word+'\\b','g'),' '+num+' ');
-  }
-
-  const row=vwData&&vwData.rows&&vwData.rows.find(function(r){return r.eid===eid;});
-  if(!row){toast('Row nahi mila!',false);return;}
-  const allBlanks=[];
-  for(let d=1;d<=vwData.dim;d++){if(!row.days[d])allBlanks.push(d);}
-
-  const days=[];
-
-  // "saare" / "sab" / "all" → all blanks
-  if(/\b(saare|sab|all|सारे|सब|poore)\b/.test(processed)){
-    days.push(...allBlanks);
-  }
-
-  // Range: "5 se 15" / "5 to 15" / "5-15"
-  if(!days.length){
-    const rangeMatch=processed.match(/(\d+)\s*(?:se|to|-)\s*(\d+)/);
-    if(rangeMatch){
-      const from=parseInt(rangeMatch[1]),to=parseInt(rangeMatch[2]);
-      for(let i=Math.min(from,to);i<=Math.max(from,to);i++) days.push(i);
-    }
-  }
-
-  // Individual numbers
-  if(!days.length){
-    const nums=[...processed.matchAll(/\b(\d{1,2})\b/g)].map(m=>parseInt(m[1])).filter(n=>n>=1&&n<=31);
-    days.push(...nums);
-  }
-
-  // No code but days found → select those dates in checkboxes
-  if(!detectedCode){
-    if(days.length){
-      // Select these dates in the checkbox panel
-      days.forEach(function(d){
-        if(d>=1&&d<=vwData.dim&&!row.days[d]) vwBlankChecked.add(d);
-      });
-      vwRenderBulkPanel(eid);
-      if(statusEl)statusEl.innerHTML='<span style="color:#f59e0b">📅 Day '+days.join(', ')+' selected — neeche code tap karo!</span>';
-    } else {
-      if(statusEl)statusEl.innerHTML='<span style="color:#f87171">Samjha nahi — bolo jaise "5 rest" ya "12 se 15 CL"</span>';
-    }
-    return;
-  }
-
-  // No days but code found → apply to all blanks if only 1 blank, else ask
-  if(!days.length){
-    if(allBlanks.length===1){
-      days.push(allBlanks[0]);
-    } else {
-      if(statusEl)statusEl.innerHTML='<span style="color:#f87171">Din nahi samjha! Bolo: "5 ka '+detectedCode.toLowerCase()+'" ya "saare '+detectedCode.toLowerCase()+'"</span>';
-      return;
-    }
-  }
-
-  // Apply!
-  const applied=[];
-  days.forEach(function(d){
-    if(d>=1&&d<=vwData.dim&&!row.days[d]){row.days[d]=detectedCode;applied.push(d);}
-  });
-
-  if(!applied.length){
-    if(statusEl)statusEl.innerHTML='<span style="color:#f87171">Days already filled hain!</span>';
-    return;
-  }
-
-  vwLog.unshift({eid,name:(row.name||''),code:detectedCode,days:applied,dates:applied.join(', '),dateTime:Date.now(),mon:vwData.mon,yr:vwData.yr});
-  LS.s('vwlog',vwLog);
-  vwUpdateLogDisplay();
-  if(statusEl)statusEl.innerHTML='<span style="color:#16a34a">✅ Day '+applied.join(', ')+' → <b>'+detectedCode+'</b> done!</span>';
-  toast('🎤 '+applied.length+' din → '+detectedCode);
-
-  // Check if blanks still remaining
-  const remaining=[];
-  for(var dd=1;dd<=vwData.dim;dd++){if(!row.days[dd])remaining.push(dd);}
-
-  setTimeout(function(){
-    vwRenderBulkPanel(eid);
-    vwRender();
-    // Auto mode: agar aur blanks hain to phir puchho, warna next employee
-    if(window._autoVoiceMode){
-      if(remaining.length){
-        setTimeout(function(){vwAutoAsk(eid,row,remaining);},600);
-      } else {
-        setTimeout(function(){vwNextEmp();},800);
-      }
-    }
-  },300);
-}
-// ─────────────────────────────────────────────────────────────────
-
-function vwUndoByIdx(idx,eid){
-  const logEntry=vwLog[idx];
-  if(!logEntry){toast('Log entry nahi mila!',false);return;}
-  vwUndo(logEntry,eid);
-}
-
 function vwUndo(logEntry, eid) {
   if (!vwData || !logEntry) return;
   const row = vwData.rows.find(r => r.eid === eid);
@@ -6762,11 +5901,9 @@ function vwUpdateLogDisplay(){
       const code=l.code||l.action||'';
       const name=l.name||'';
       const eid=l.eid||'';
-      const dates=l.dates||(Array.isArray(l.days)?l.days.join(', '):(l.days||''));
-      let tm=l.time||'';
-      if(!tm&&l.dateTime){tm=(typeof l.dateTime==='number')?new Date(l.dateTime).toLocaleString('en-IN'):l.dateTime;}
+      const dates=l.dates||'';
       return '<div style="padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03);display:flex;gap:6px;flex-wrap:wrap;font-size:9px">'
-        +'<span style="color:#4b5563;min-width:110px">'+tm+'</span>'
+        +'<span style="color:#4b5563;min-width:110px">'+(l.dateTime||l.time||'')+'</span>'
         +'<span style="color:#94a3b8;min-width:65px">'+eid+'</span>'
         +'<span style="color:#e2e8f0;min-width:100px;font-weight:500">'+name+'</span>'
         +'<span style="color:#f59e0b;font-weight:700;min-width:24px">'+code+'</span>'
@@ -6961,72 +6098,36 @@ function vwAmrDownload2(){
 
 function vwLogDownload(){
   if(!vwLog.length)return alert('No log entries!');
-
-  const fmtDate=(d,mon,yr)=>{
-    if(!d)return '';
-    if(mon!==undefined&&mon!==null&&yr){
-      return String(d).padStart(2,'0')+'.'+String(mon+1).padStart(2,'0')+'.'+yr;
-    }
-    // Fallback: use current vwData month/year if entry missing it
-    if(vwData&&vwData.mon!==undefined&&vwData.yr){
-      return String(d).padStart(2,'0')+'.'+String(vwData.mon+1).padStart(2,'0')+'.'+vwData.yr;
-    }
-    return String(d);
-  };
-
-  // Name lookup helper — from log, then vwData rows, then roster
-  const getName=(l)=>{
-    if(l.name)return l.name;
-    if(vwData&&vwData.rows){
-      const r=vwData.rows.find(function(x){return x.eid===l.eid;});
-      if(r&&r.name)return r.name;
-    }
-    const emp=S.emps.find(function(e){return e.i===l.eid;});
-    if(emp&&emp.n)return emp.n;
-    return '';
-  };
-
-  // Time format helper
-  const fmtTime=(dt)=>{
-    if(!dt)return '';
-    if(typeof dt==='number')return new Date(dt).toLocaleString('en-IN');
-    return dt;
-  };
-
-  // Expand each log entry into consecutive-date ranges
-  const expanded=[];
-  vwLog.forEach(function(l){
-    const daysArr=Array.isArray(l.days)&&l.days.length?l.days.map(Number):(l.dates?String(l.dates).split(',').map(Number).filter(Boolean):[]);
-    if(!daysArr.length)return;
-    const sorted=[...daysArr].sort((a,b)=>a-b);
-    const mon=(l.mon!==undefined&&l.mon!==null)?l.mon:(vwData?vwData.mon:undefined);
-    const yr=l.yr||(vwData?vwData.yr:undefined);
-    let rangeStart=sorted[0],prev=sorted[0];
-    for(let i=1;i<=sorted.length;i++){
-      if(i<sorted.length&&sorted[i]===prev+1){prev=sorted[i];continue;}
-      expanded.push({
-        eid:l.eid||'',name:getName(l),code:l.code||l.action||'',
-        startDay:rangeStart,endDay:prev,totalDays:prev-rangeStart+1,
-        mon:mon,yr:yr,dateTime:fmtTime(l.dateTime||l.time||'')
-      });
-      if(i<sorted.length){rangeStart=sorted[i];prev=sorted[i];}
-    }
+  // Sort log by date asc before download
+  const sortedLog=[...vwLog].sort((a,b)=>{
+    const da=a.days&&a.days[0]?Number(a.days[0]):0;
+    const db=b.days&&b.days[0]?Number(b.days[0]):0;
+    return da-db;
   });
-
-  expanded.sort((a,b)=>(a.startDay||0)-(b.startDay||0));
-
-  const rows=expanded.map((e,i)=>({
-    'SN':i+1,
-    'Employee ID':e.eid,
-    'Employee Name':e.name,
-    'Code':e.code,
-    'Start Date':fmtDate(e.startDay,e.mon,e.yr),
-    'End Date':fmtDate(e.endDay,e.mon,e.yr),
-    'Total Days':e.totalDays,
-    'Date & Time':e.dateTime
-  }));
-
-  const ws=XLSX.utils.json_to_sheet(rows);
+  const rows=sortedLog.map((l,i)=>{
+    const daysArr=Array.isArray(l.days)&&l.days.length?l.days:(l.dates?l.dates.split(',').map(Number).filter(Boolean):[]);
+    const sortedDays=daysArr.map(Number).sort((a,b)=>a-b); // asc order — 1 pehle
+    const day=sortedDays.length?sortedDays[0]:'';
+    const dtStr=l.dateTime||l.time||'';
+    const fmtDate=d=>{
+      if(!d) return '';
+      if(l.mon!==undefined&&l.yr){
+        return String(d).padStart(2,'0')+'.'+String(l.mon+1).padStart(2,'0')+'.'+l.yr;
+      }
+      return String(d);
+    };
+    return {
+      'SN':i+1,
+      'Employee ID':l.eid||'',
+      'Employee Name':l.name||'',
+      'Code':l.code||l.action||'',
+      'Start Date':fmtDate(day),
+      'End Date':fmtDate(day),
+      'Total Days':1,
+      'Date & Time':dtStr
+    };
+  });
+    const ws=XLSX.utils.json_to_sheet(rows);
   ws['!cols']=[{wch:4},{wch:13},{wch:26},{wch:8},{wch:12},{wch:12},{wch:10},{wch:20}];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Viewer Activity Log');
   XLSX.writeFile(wb,'Viewer_Activity_Log.xlsx');
@@ -11724,6 +10825,382 @@ let mmMonths=[]; // sorted month keys
 let mmReport=[]; // generated report rows
 let mmField=''; // current field
 
+
+// ══════════════════════════════════════════════════
+// MULTI-MONTH PAYSLIP STORE (HTML upload)
+// ══════════════════════════════════════════════════
+let psMonthStore = {}; // {monthKey: [slips]}
+
+// Load saved months on startup
+(async function psLoadSaved() {
+  try {
+    const idx = LS.g('ps_html_idx');
+    if (idx && Array.isArray(idx)) {
+      for (const m of idx) {
+        try {
+          const data = await IDB.get('ps_html_' + m);
+          if (data) psMonthStore[m] = data;
+        } catch {}
+      }
+      psRenderMonthsDisplay();
+    }
+  } catch {}
+})();
+
+function psMonthKeys() {
+  return Object.keys(psMonthStore).sort(yrSortMonths);
+}
+
+function psSaveMonthStore() {
+  const keys = psMonthKeys();
+  LS.s('ps_html_idx', keys);
+  keys.forEach(m => {
+    try { IDB.set('ps_html_' + m, psMonthStore[m]); } catch {}
+  });
+}
+
+function psUploadHTML() {
+  const input = document.getElementById('ps-html-files');
+  if (!input || !input.files.length) { toast('HTML files select karo!', false); return; }
+  const files = Array.from(input.files);
+  const statusEl = document.getElementById('ps-html-status');
+  if (statusEl) statusEl.innerHTML = '<span style="color:#22c55e">⏳ Processing ' + files.length + ' files...</span>';
+
+  let processed = 0;
+
+  function processFile(file) {
+    return new Promise(function(resolve) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const html = e.target.result;
+          const slips = psParseHTMLPayslip(html, file.name);
+          if (slips && slips.length) {
+            const month = slips[0].monthYr || 'UNKNOWN';
+            if (!psMonthStore[month]) psMonthStore[month] = [];
+            // Merge — avoid duplicates by eid
+            slips.forEach(function(s) {
+              const existing = psMonthStore[month].findIndex(function(e2) { return e2.eid === s.eid; });
+              if (existing >= 0) psMonthStore[month][existing] = s;
+              else psMonthStore[month].push(s);
+            });
+          }
+          processed++;
+          if (statusEl) statusEl.innerHTML = '<span style="color:#22c55e">Processing... ' + processed + '/' + files.length + '</span>';
+        } catch (err) {
+          processed++;
+          console.log('psUpload error:', err.message);
+        }
+        resolve();
+      };
+      reader.readAsText(file, 'utf-8');
+    });
+  }
+
+  (async function() {
+    for (let i = 0; i < files.length; i++) {
+      await processFile(files[i]);
+    }
+    psSaveMonthStore();
+    psRenderMonthsDisplay();
+    const total = Object.values(psMonthStore).reduce(function(s, v) { return s + v.length; }, 0);
+    if (statusEl) statusEl.innerHTML = '<span style="color:#22c55e">✅ Done! ' + processed + ' files → ' + psMonthKeys().length + ' months → ' + total + ' employees</span>';
+    toast(processed + ' files processed!');
+  })();
+}
+
+// ── Parse HTML payslip (SAP format) ──
+function psParseHTMLPayslip(html, filename) {
+  // Use DOMParser to parse HTML
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+
+  // Try to get all tables
+  const tables = doc.querySelectorAll('table');
+  if (!tables.length) return [];
+
+  // SAP payslip HTML has multiple employees — each section is one slip
+  // Find month/year from HTML
+  let monthYr = '';
+  const bodyText = doc.body ? doc.body.innerText || doc.body.textContent : '';
+
+  // Try to find month year pattern
+  const mnMatch = bodyText.match(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s\/\-]*(\d{4})/i);
+  if (mnMatch) {
+    const mn = mnMatch[0].substring(0, 3).toUpperCase();
+    monthYr = mn + '-' + mnMatch[1];
+  }
+
+  // Fallback: try filename
+  if (!monthYr) {
+    const fm = filename.toUpperCase().match(/(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\w*[_\s\-]*(\d{4})/);
+    if (fm) monthYr = fm[1].substring(0, 3) + '-' + fm[2];
+  }
+
+  if (!monthYr) {
+    // Try numeric pattern 2026-04 or 04-2026
+    const nm = filename.match(/(\d{4})[_\-](\d{2})/);
+    if (nm) {
+      const mn2 = parseInt(nm[2]);
+      if (mn2 >= 1 && mn2 <= 12) monthYr = YMN[mn2 - 1] + '-' + nm[1];
+    }
+  }
+
+  // Parse using existing psReadSlipExcel logic — but from HTML tables
+  // Convert HTML to XLSX workbook first
+  const slips = [];
+
+  // Each table may be a payslip — find tables with employee data
+  // SAP HTML payslip: look for "Personnel No" or "Employee ID" in table
+  let currentSlip = null;
+
+  tables.forEach(function(tbl) {
+    const rows = tbl.querySelectorAll('tr');
+    rows.forEach(function(row) {
+      const cells = row.querySelectorAll('td, th');
+      const cellTexts = Array.from(cells).map(function(c) { return (c.textContent || '').trim(); });
+      const rowText = cellTexts.join(' ').toLowerCase();
+
+      // Detect new employee slip start
+      if (/personnel.?no|employee.?id|pers\.no|pernr/i.test(rowText)) {
+        if (currentSlip && currentSlip.eid) slips.push(currentSlip);
+        currentSlip = { earnings: [], deductions: [], attendance: {}, monthYr: monthYr };
+      }
+
+      if (!currentSlip) return;
+
+      // Extract EID
+      if (/personnel.?no|pernr/i.test(cellTexts[0]) && cellTexts[1]) {
+        currentSlip.eid = cellTexts[1].replace(/\D/g, '').trim();
+      }
+      // Name
+      if (/^name$/i.test(cellTexts[0]) && cellTexts[1]) {
+        currentSlip.name = cellTexts[1].trim();
+      }
+      // Designation/Position
+      if (/designation|position/i.test(cellTexts[0]) && cellTexts[1]) {
+        currentSlip.designation = cellTexts[1].trim();
+      }
+      // Pay Point
+      if (/pay.?point|paypoint/i.test(cellTexts[0]) && cellTexts[1]) {
+        currentSlip.payPoint = cellTexts[1].trim();
+      }
+      // Department
+      if (/department|dept/i.test(cellTexts[0]) && cellTexts[1]) {
+        currentSlip.dept = cellTexts[1].trim();
+      }
+      // Basic Pay / earnings
+      if (cellTexts.length >= 2) {
+        const label = cellTexts[0];
+        const amt = parseFloat((cellTexts[1] || '').replace(/,/g, ''));
+        if (!isNaN(amt) && amt > 0) {
+          if (/basic|bp/i.test(label)) currentSlip.basic = amt;
+          else if (/hra|house/i.test(label)) currentSlip.hra = amt;
+          else if (/gross/i.test(label)) currentSlip.gross = amt;
+          else if (/net/i.test(label)) currentSlip.net = amt;
+          else if (/pf|provident/i.test(label)) currentSlip.pf = amt;
+          else if (/total.*earn/i.test(label)) currentSlip.totalEarnings = amt;
+          else if (/total.*deduct/i.test(label)) currentSlip.totalDeductions = amt;
+        }
+      }
+      // Attendance
+      if (/actual.*day|days.*work|att.*day/i.test(rowText) && cellTexts[1]) {
+        currentSlip.attendance.actualDays = parseFloat(cellTexts[1]) || 0;
+      }
+    });
+  });
+
+  if (currentSlip && currentSlip.eid) slips.push(currentSlip);
+
+  // If HTML parsing gave no results, try the existing TXT-based approach
+  // (SAP exports vary — fallback to raw text parsing)
+  if (!slips.length) {
+    return psParseHTMLFallback(html, filename, monthYr);
+  }
+
+  return slips;
+}
+
+// ── Fallback: parse HTML as raw text (SAP payslip text export format) ──
+function psParseHTMLFallback(html, filename, monthYr) {
+  // Strip HTML tags
+  const text = html.replace(/<[^>]+>/g, '\n').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&');
+  const lines = text.split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
+
+  const slips = [];
+  let current = null;
+
+  lines.forEach(function(line) {
+    if (/personnel.?no[:\s]+(\d+)/i.test(line)) {
+      if (current && current.eid) slips.push(current);
+      current = { earnings: [], deductions: [], attendance: {}, monthYr: monthYr };
+      const m = line.match(/(\d{7,10})/);
+      if (m) current.eid = m[1];
+    }
+    if (!current) return;
+    if (/^name[:\s]+(.+)/i.test(line)) {
+      const m = line.match(/name[:\s]+(.+)/i);
+      if (m) current.name = m[1].trim();
+    }
+    // Basic pay
+    const amtM = line.match(/^([A-Za-z\s\/]+)\s+([\d,]+\.?\d*)\s*$/);
+    if (amtM) {
+      const label = amtM[1].trim().toLowerCase();
+      const amt = parseFloat(amtM[2].replace(/,/g, ''));
+      if (!isNaN(amt)) {
+        if (/basic/.test(label)) current.basic = amt;
+        else if (/hra/.test(label)) current.hra = amt;
+        else if (/gross/.test(label)) current.gross = amt;
+        else if (/net/.test(label)) current.net = amt;
+        else if (/^pf|provident/.test(label)) current.pf = amt;
+      }
+    }
+  });
+
+  if (current && current.eid) slips.push(current);
+  return slips;
+}
+
+// ── Render saved months ──
+function psRenderMonthsDisplay() {
+  const el = document.getElementById('ps-months-display');
+  const ctrl = document.getElementById('ps-month-controls');
+  const sel = document.getElementById('ps-month-sel');
+  const keys = psMonthKeys();
+
+  if (!keys.length) {
+    if (el) el.innerHTML = '<div style="color:#4b5563;font-size:10px;padding:4px">Koi month saved nahi. HTML files upload karo.</div>';
+    if (ctrl) ctrl.style.display = 'none';
+    return;
+  }
+
+  // Month badges
+  let h = '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">';
+  keys.forEach(function(m) {
+    const cnt = psMonthStore[m] ? psMonthStore[m].length : 0;
+    h += '<div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:6px;padding:3px 8px;display:flex;align-items:center;gap:4px">';
+    h += '<span style="font-size:10px;font-weight:700;color:#22c55e">' + m + '</span>';
+    h += '<span style="font-size:9px;color:#4b5563">' + cnt + ' emps</span>';
+    h += '<button onclick="psDeleteMonth(\'' + m + '\')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:10px;padding:0 2px">✕</button>';
+    h += '</div>';
+  });
+  h += '</div>';
+  if (el) el.innerHTML = h;
+
+  // Populate month selector
+  if (sel) {
+    sel.innerHTML = '<option value="">-- Month Select --</option>';
+    keys.forEach(function(m) {
+      const opt = document.createElement('option');
+      opt.value = m; opt.textContent = m;
+      sel.appendChild(opt);
+    });
+  }
+  if (ctrl) ctrl.style.display = 'block';
+}
+
+function psDeleteMonth(m) {
+  if (!confirm('Delete ' + m + ' ka data?')) return;
+  delete psMonthStore[m];
+  try { IDB.del && IDB.del('ps_html_' + m); } catch {}
+  psSaveMonthStore();
+  psRenderMonthsDisplay();
+  document.getElementById('ps-mm-emp-list').innerHTML = '';
+  document.getElementById('ps-mm-slip-view').innerHTML = '';
+  toast(m + ' deleted!');
+}
+
+function psClearAllMonths() {
+  if (!confirm('Sab months ka data delete karo?')) return;
+  psMonthKeys().forEach(function(m) {
+    try { IDB.del && IDB.del('ps_html_' + m); } catch {}
+  });
+  psMonthStore = {};
+  LS.s('ps_html_idx', []);
+  psRenderMonthsDisplay();
+  toast('All months cleared!');
+}
+
+// ── Month selected → show employee list ──
+function psMonthSelected() {
+  const m = document.getElementById('ps-month-sel')?.value;
+  if (!m || !psMonthStore[m]) return;
+  psMMFilter('');
+}
+
+function psMMFilter(search) {
+  const m = document.getElementById('ps-month-sel')?.value;
+  if (!m || !psMonthStore[m]) return;
+  const slips = psMonthStore[m];
+  const sr = search.toLowerCase().trim();
+  const filtered = sr ? slips.filter(function(s) {
+    return (s.eid || '').includes(sr) || (s.name || '').toLowerCase().includes(sr);
+  }) : slips;
+
+  const cntEl = document.getElementById('ps-mm-count');
+  if (cntEl) cntEl.textContent = filtered.length + '/' + slips.length;
+
+  let h = '<div style="border:1px solid rgba(99,102,241,.1);border-radius:8px;overflow:hidden">';
+  filtered.forEach(function(s, i) {
+    h += '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.03);cursor:pointer;background:' + (i % 2 === 0 ? 'rgba(255,255,255,.01)' : 'transparent') + '" onclick="psMMShowSlip(' + slips.indexOf(s) + ',\'' + m + '\')">';
+    h += '<div style="width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#059669,#10b981);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:10px;color:#fff;flex-shrink:0">' + (s.name || '?').charAt(0) + '</div>';
+    h += '<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (s.name || 'Unknown') + '</div>';
+    h += '<div style="font-size:9px;color:#4b5563">' + (s.eid || '') + (s.designation ? ' · ' + s.designation : '') + '</div></div>';
+    if (s.net) h += '<div style="font-size:11px;font-weight:700;color:#22c55e;flex-shrink:0">₹' + s.net.toLocaleString('en-IN') + '</div>';
+    h += '</div>';
+  });
+  h += '</div>';
+  document.getElementById('ps-mm-emp-list').innerHTML = h;
+  document.getElementById('ps-mm-slip-view').innerHTML = '';
+}
+
+// ── Show individual payslip ──
+function psMMShowSlip(idx, month) {
+  const s = psMonthStore[month] && psMonthStore[month][idx];
+  if (!s) return;
+
+  let h = '<div class="cd" style="padding:14px;margin-top:8px;border-left:3px solid #22c55e">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+  h += '<div style="font-size:13px;font-weight:700;color:#22c55e">' + (s.name || '') + '</div>';
+  h += '<div style="font-size:10px;color:#64748b">' + (s.eid || '') + ' · ' + month + '</div>';
+  h += '</div>';
+
+  // Details table
+  const fields = [
+    ['Designation', s.designation], ['Department', s.dept],
+    ['Pay Point', s.payPoint], ['Basic Pay', s.basic ? '₹' + s.basic.toLocaleString('en-IN') : ''],
+    ['HRA', s.hra ? '₹' + s.hra.toLocaleString('en-IN') : ''],
+    ['Gross', s.gross ? '₹' + s.gross.toLocaleString('en-IN') : ''],
+    ['PF', s.pf ? '₹' + s.pf.toLocaleString('en-IN') : ''],
+    ['Total Deductions', s.totalDeductions ? '₹' + s.totalDeductions.toLocaleString('en-IN') : ''],
+    ['Net Pay', s.net ? '₹' + s.net.toLocaleString('en-IN') : ''],
+  ].filter(function(f) { return f[1]; });
+
+  h += '<table style="width:100%;border-collapse:collapse;font-size:11px">';
+  fields.forEach(function(f, i) {
+    const bg = i % 2 === 0 ? 'rgba(255,255,255,.02)' : 'transparent';
+    h += '<tr style="background:' + bg + '"><td style="padding:4px 8px;color:#64748b;width:40%">' + f[0] + '</td><td style="padding:4px 8px;font-weight:600;color:' + (f[0] === 'Net Pay' ? '#22c55e' : '#e2e8f0') + '">' + f[1] + '</td></tr>';
+  });
+  h += '</table>';
+
+  // Earnings/Deductions if available
+  if (s.earnings && s.earnings.length) {
+    h += '<div style="font-size:10px;font-weight:700;color:#a5b4fc;margin-top:8px;margin-bottom:4px">Earnings</div>';
+    s.earnings.forEach(function(e) {
+      h += '<div style="display:flex;justify-content:space-between;font-size:10px;padding:2px 8px"><span style="color:#64748b">' + e.label + '</span><span style="color:#22c55e">₹' + (e.amount || 0).toLocaleString('en-IN') + '</span></div>';
+    });
+  }
+  if (s.deductions && s.deductions.length) {
+    h += '<div style="font-size:10px;font-weight:700;color:#f87171;margin-top:8px;margin-bottom:4px">Deductions</div>';
+    s.deductions.forEach(function(d) {
+      h += '<div style="display:flex;justify-content:space-between;font-size:10px;padding:2px 8px"><span style="color:#64748b">' + d.label + '</span><span style="color:#f87171">₹' + (d.amount || 0).toLocaleString('en-IN') + '</span></div>';
+    });
+  }
+
+  h += '</div>';
+  document.getElementById('ps-mm-slip-view').innerHTML = h;
+}
+
 function mmUploadExcel(){
   var input=document.getElementById('mm-files');
   if(!input||!input.files.length)return alert('Excel files select karo!');
@@ -15264,10 +14741,6 @@ let nightData={};
 try{const nd=LS.g('nightdata');if(nd&&typeof nd==='object')nightData=nd;}catch{}
 function nightSave(){LS.s('nightdata',nightData);}
 
-let dsrData={catmap:{},entries:{}};
-try{const dd=LS.g('dsrdata');if(dd&&typeof dd==='object'&&dd.catmap)dsrData=dd;}catch{}
-function dsrSave(){LS.s('dsrdata',dsrData);}
-
 function nightGetKey(){return MF[S.mon]+'-'+S.yr;}
 
 function nightRenderList(){
@@ -15391,1118 +14864,4 @@ function rtParseBio(buffer){
   }
   return result;
   }catch(err){alert('Parse error: '+err.message);return [];}
-}
-
-
-// ══════════════════════════════════════════════════
-// DSR — Daily Summary Report
-// ══════════════════════════════════════════════════
-
-var DSR_CATS=['EXECUTIVE','MINING SIRDAR','OVERMAN','SURVEYOR','CHAINMAN',
-  'MECHANICAL FOREMAN','ELECTRICAL FOREMAN','CLERK','SECURITY MR',
-  'TECHNICAL INSPECTOR','TELEPHONE OPERATOR','MINING DR','E&M DR'];
-
-function dsrGetCats(){
-  var catSet={};
-  var keys=Object.keys(dsrData.catmap||{});
-  for(var i=0;i<keys.length;i++) catSet[dsrData.catmap[keys[i]].cat]=1;
-  var arr=Object.keys(catSet);
-  arr.sort(function(a,b){
-    var ai=DSR_CATS.indexOf(a),bi=DSR_CATS.indexOf(b);
-    if(ai>=0&&bi>=0) return ai-bi;
-    if(ai>=0) return -1; if(bi>=0) return 1;
-    return a.localeCompare(b);
-  });
-  return arr;
-}
-
-function dsrOnRollByCat(){
-  var c={};
-  var keys=Object.keys(dsrData.catmap||{});
-  for(var i=0;i<keys.length;i++){
-    var cat=dsrData.catmap[keys[i]].cat;
-    c[cat]=(c[cat]||0)+1;
-  }
-  return c;
-}
-
-function dsrCalcPresent(date){
-  var catP={};
-  var bday=bioRawData[date];
-  if(!bday||!dsrData.catmap) return catP;
-  var eids=Object.keys(bday);
-  for(var i=0;i<eids.length;i++){
-    var eid=eids[i];
-    var emp=dsrData.catmap[eid]||dsrData.catmap[String(eid)];
-    if(!emp) continue;
-    var info=bday[eid];
-    if(info.status==='P'||info.code==='P')
-      catP[emp.cat]=(catP[emp.cat]||0)+1;
-  }
-  return catP;
-}
-
-function dsrFmtDate(d){
-  var mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var p=d.split('-');
-  return p[2]+' '+mn[parseInt(p[1])-1]+' '+p[0];
-}
-
-function dsrRender(){
-  var cats=dsrGetCats();
-  var onroll=dsrOnRollByCat();
-  var hasCatmap=Object.keys(dsrData.catmap||{}).length>0;
-  var entries=dsrData.entries||{};
-  var savedDates=Object.keys(entries).sort(function(a,b){return b.localeCompare(a);});
-  var curDate=S.dt;
-
-  var h='<div class="cd" style="padding:14px;margin-bottom:10px">';
-  h+='<div style="font-size:16px;font-weight:700;color:#a5b4fc;margin-bottom:12px">&#128202; DSR &#8212; Daily Summary Report</div>';
-
-  // STEP 1
-  h+='<div style="margin-bottom:12px;padding:10px;background:rgba(99,102,241,.07);border-radius:8px;border:1px solid rgba(99,102,241,.15)">';
-  h+='<div style="font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:6px">&#9881; STEP 1: Employee Category Setup</div>';
-  h+='<div style="font-size:10px;color:#64748b;margin-bottom:8px">Excel mein 3 columns: <b style="color:#94a3b8">EmpID | Name | Category</b></div>';
-  h+='<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
-  h+='<label style="cursor:pointer"><input type="file" accept=".xlsx,.xls" onchange="dsrUploadExcel(this)" style="display:none"><span class="btn bp" style="font-size:10px;padding:5px 12px;display:inline-block">&#128229; Upload Excel</span></label>';
-  if(hasCatmap){
-    h+='<span style="color:#22c55e;font-size:10px">&#10003; '+Object.keys(dsrData.catmap).length+' employees &middot; '+cats.length+' categories</span>';
-    h+='<button class="btn bg2" style="font-size:9px;padding:3px 8px" onclick="if(confirm(\'Catmap clear karna hai?\')){dsrData.catmap={};dsrSave();render();}">Reset</button>';
-  } else {
-    h+='<span style="color:#f59e0b;font-size:10px">Pehle Excel upload karo</span>';
-  }
-  h+='</div>';
-  if(hasCatmap){
-    h+='<div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">';
-    for(var ci=0;ci<cats.length;ci++){
-      h+='<span style="background:rgba(245,158,11,.1);color:#f59e0b;border:1px solid rgba(245,158,11,.2);border-radius:4px;padding:2px 7px;font-size:9px">'+cats[ci]+': '+(onroll[cats[ci]]||0)+'</span>';
-    }
-    h+='</div>';
-  }
-  h+='</div>';
-
-  if(!hasCatmap){
-    h+='<div style="text-align:center;color:#4b5563;font-size:11px;padding:24px">Pehle Step 1 mein Excel upload karo</div></div>';
-    return h;
-  }
-
-  // STEP 2: Entry table
-  h+='<div style="margin-bottom:12px;padding:10px;background:rgba(99,102,241,.05);border-radius:8px;border:1px solid rgba(99,102,241,.12)">';
-  h+='<div style="font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:8px">&#128203; STEP 2: DSR Entry</div>';
-  h+='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">';
-  h+='<label style="font-size:10px;color:#64748b">Date:</label>';
-  h+='<input type="date" id="dsr-date" value="'+curDate+'" class="inp" style="max-width:160px;font-size:11px;padding:4px 8px">';
-  h+='<button class="btn bp" style="font-size:10px;padding:4px 10px" onclick="dsrLoadEntry()">Load</button>';
-  h+='<button class="btn bg2" style="font-size:10px;padding:4px 8px" onclick="dsrSetToday()">Today</button>';
-  h+='<button class="btn" style="font-size:10px;padding:4px 10px;background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.3)" onclick="dsrAutoFillBio()">&#9889; Auto P from Bio</button>';
-  h+='</div>';
-
-  h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:10px">';
-  h+='<thead><tr style="background:rgba(255,255,255,.04)">';
-  var thStyle='padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.06)';
-  h+='<th style="'+thStyle+';text-align:left;color:#94a3b8">CATEGORY</th>';
-  h+='<th style="'+thStyle+';color:#22c55e">PRESENT</th>';
-  h+='<th style="'+thStyle+';color:#94a3b8">REST</th>';
-  h+='<th style="'+thStyle+';color:#60a5fa">LEAVE(CL/EL)</th>';
-  h+='<th style="'+thStyle+';color:#f59e0b">SICK LEAVE</th>';
-  h+='<th style="'+thStyle+';color:#f87171">ABSENT</th>';
-  h+='<th style="'+thStyle+';color:#a5b4fc">ON ROLL</th>';
-  h+='</tr></thead><tbody id="dsr-tbody">';
-
-  var tP=0,tR=0,tL=0,tSL=0,tA=0,tOR=0;
-  for(var ci=0;ci<cats.length;ci++){
-    var cat=cats[ci];
-    var ex=(entries[curDate]||{})[cat]||{P:0,R:0,L:0,SL:0,A:0};
-    var or=onroll[cat]||0;
-    var bd='border-bottom:1px solid rgba(255,255,255,.03)';
-    h+='<tr>';
-    h+='<td style="padding:4px 10px;font-weight:600;font-size:10px;'+bd+'">'+cat+'</td>';
-    var fields=['P','R','L','SL','A'];
-    var fColors={P:'color:#22c55e',R:'',L:'color:#60a5fa',SL:'color:#f59e0b',A:'color:#f87171'};
-    for(var fi=0;fi<fields.length;fi++){
-      var f=fields[fi];
-      h+='<td style="padding:3px;'+bd+'"><input type="number" min="0" value="'+(ex[f]||0)+'" data-ci="'+ci+'" data-f="'+f+'" oninput="dsrCalcTotals()" class="inp" style="width:52px;padding:3px;font-size:11px;text-align:center;'+fColors[f]+'"></td>';
-    }
-    h+='<td style="padding:4px 8px;text-align:center;color:#a5b4fc;font-weight:700;'+bd+'">'+or+'</td>';
-    h+='</tr>';
-    tOR+=or;
-  }
-
-  h+='</tbody><tfoot><tr style="background:rgba(245,158,11,.08);border-top:1px solid rgba(245,158,11,.3)">';
-  h+='<td style="padding:5px 10px;font-weight:700;font-size:11px;color:#f59e0b">TOTAL</td>';
-  var totCols=['P','R','L','SL','A'];
-  var totColors={P:'#22c55e',R:'#e2e8f0',L:'#60a5fa',SL:'#f59e0b',A:'#f87171'};
-  for(var ti=0;ti<totCols.length;ti++){
-    h+='<td id="dtot-'+totCols[ti]+'" style="padding:5px 8px;text-align:center;font-weight:700;color:'+totColors[totCols[ti]]+';font-size:12px">0</td>';
-  }
-  h+='<td style="padding:5px 8px;text-align:center;font-weight:700;color:#a5b4fc;font-size:12px">'+tOR+'</td>';
-  h+='</tr></tfoot></table></div>';
-
-  h+='<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">';
-  h+='<button class="btn bp" style="font-size:11px;padding:6px 14px" onclick="dsrSaveEntry()">&#128190; Save DSR</button>';
-  h+='<button class="btn" style="font-size:11px;padding:6px 14px;background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3)" onclick="dsrDownloadExcel()">&#11015; Download Excel</button>';
-  h+='<button class="btn bg2" style="font-size:11px;padding:6px 10px" onclick="dsrClearEntry()">Clear</button>';
-  h+='</div></div>';
-
-  // HISTORY
-  h+='<div style="padding:10px;background:rgba(99,102,241,.04);border-radius:8px;border:1px solid rgba(99,102,241,.1)">';
-  h+='<div style="font-size:11px;font-weight:700;color:#a5b4fc;margin-bottom:8px">&#128193; Saved Records ('+savedDates.length+')</div>';
-  if(savedDates.length===0){
-    h+='<div style="text-align:center;color:#4b5563;font-size:10px;padding:16px">Koi DSR save nahi hua abhi</div>';
-  } else {
-    h+='<div style="overflow-x:auto;max-height:280px;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:10px">';
-    h+='<thead><tr style="background:rgba(255,255,255,.03)">';
-    h+='<th style="padding:5px 8px;text-align:left;color:#64748b">Date</th>';
-    h+='<th style="padding:5px 8px;color:#22c55e">P</th><th style="padding:5px 8px;color:#94a3b8">R</th>';
-    h+='<th style="padding:5px 8px;color:#60a5fa">L</th><th style="padding:5px 8px;color:#f59e0b">SL</th>';
-    h+='<th style="padding:5px 8px;color:#f87171">A</th><th style="padding:5px 8px;color:#64748b">Action</th>';
-    h+='</tr></thead><tbody>';
-    for(var di=0;di<savedDates.length;di++){
-      var d=savedDates[di];
-      var row=entries[d];
-      var P=0,R=0,L=0,SL=0,A=0;
-      var rkeys=Object.keys(row);
-      for(var rk=0;rk<rkeys.length;rk++){var v=row[rkeys[rk]];P+=v.P||0;R+=v.R||0;L+=v.L||0;SL+=v.SL||0;A+=v.A||0;}
-      h+='<tr style="border-bottom:1px solid rgba(255,255,255,.03)">';
-      h+='<td style="padding:4px 8px;font-family:monospace;color:#a5b4fc;font-size:9px">'+dsrFmtDate(d)+'</td>';
-      h+='<td style="padding:4px 8px;text-align:center;color:#22c55e;font-weight:700">'+P+'</td>';
-      h+='<td style="padding:4px 8px;text-align:center">'+R+'</td>';
-      h+='<td style="padding:4px 8px;text-align:center;color:#60a5fa">'+L+'</td>';
-      h+='<td style="padding:4px 8px;text-align:center;color:#f59e0b">'+SL+'</td>';
-      h+='<td style="padding:4px 8px;text-align:center;color:#f87171">'+A+'</td>';
-      h+='<td style="padding:4px 8px">';
-      h+='<button class="btn bg2" style="font-size:8px;padding:2px 6px" onclick="dsrEditDate(\''+d+'\')">Edit</button> ';
-      h+='<button class="btn" style="font-size:8px;padding:2px 6px;background:rgba(34,197,94,.1);color:#22c55e;border:1px solid rgba(34,197,94,.2)" onclick="dsrDownloadDate(\''+d+'\')">&#11015;</button> ';
-      h+='<button onclick="dsrDeleteDate(\''+d+'\')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:12px;padding:0 3px">&#x2715;</button>';
-      h+='</td></tr>';
-    }
-    h+='</tbody></table></div>';
-  }
-  h+='</div></div>';
-  return h;
-}
-
-function dsrCalcTotals(){
-  var totals={P:0,R:0,L:0,SL:0,A:0};
-  var inputs=document.querySelectorAll('#dsr-tbody input');
-  for(var i=0;i<inputs.length;i++){
-    var f=inputs[i].dataset.f;
-    if(f) totals[f]=(totals[f]||0)+(parseInt(inputs[i].value)||0);
-  }
-  var fields=['P','R','L','SL','A'];
-  for(var i=0;i<fields.length;i++){
-    var el=document.getElementById('dtot-'+fields[i]);
-    if(el) el.textContent=totals[fields[i]];
-  }
-}
-
-function dsrGetEntryData(){
-  var cats=dsrGetCats();
-  var data={};
-  for(var i=0;i<cats.length;i++) data[cats[i]]={P:0,R:0,L:0,SL:0,A:0};
-  var inputs=document.querySelectorAll('#dsr-tbody input');
-  for(var i=0;i<inputs.length;i++){
-    var ci=parseInt(inputs[i].dataset.ci);
-    var f=inputs[i].dataset.f;
-    var cat=cats[ci];
-    if(cat&&f) data[cat][f]=parseInt(inputs[i].value)||0;
-  }
-  return data;
-}
-
-function dsrLoadEntry(){
-  var d=document.getElementById('dsr-date');
-  if(d) S.dt=d.value;
-  render();
-}
-
-function dsrSetToday(){
-  S.dt=new Date().toISOString().split('T')[0];
-  render();
-}
-
-function dsrSaveEntry(){
-  var dateEl=document.getElementById('dsr-date');
-  var date=dateEl?dateEl.value:S.dt;
-  if(!date){toast('Date select karo!',false);return;}
-  if(!dsrData.entries) dsrData.entries={};
-  dsrData.entries[date]=dsrGetEntryData();
-  dsrSave();
-  toast('DSR saved: '+dsrFmtDate(date));
-  render();
-}
-
-function dsrAutoFillBio(){
-  var dateEl=document.getElementById('dsr-date');
-  var date=dateEl?dateEl.value:S.dt;
-  var catP=dsrCalcPresent(date);
-  if(Object.keys(catP).length===0){toast('Is date ka Bio data nahi mila!',false);return;}
-  var cats=dsrGetCats();
-  var inputs=document.querySelectorAll('#dsr-tbody input[data-f="P"]');
-  for(var i=0;i<inputs.length;i++){
-    var ci=parseInt(inputs[i].dataset.ci);
-    var cat=cats[ci];
-    if(cat&&catP[cat]!==undefined) inputs[i].value=catP[cat];
-  }
-  dsrCalcTotals();
-  toast('Bio se Present auto-fill hua!');
-}
-
-function dsrClearEntry(){
-  var inputs=document.querySelectorAll('#dsr-tbody input');
-  for(var i=0;i<inputs.length;i++) inputs[i].value=0;
-  dsrCalcTotals();
-}
-
-function dsrEditDate(date){
-  S.dt=date;
-  render();
-}
-
-function dsrDeleteDate(date){
-  if(!confirm(dsrFmtDate(date)+' ka DSR delete karna hai?')) return;
-  delete dsrData.entries[date];
-  dsrSave();
-  toast('Deleted');
-  render();
-}
-
-function dsrMakeXlsx(date,data){
-  var cats=Object.keys(data);
-  var onroll=dsrOnRollByCat();
-  var tP=0,tR=0,tL=0,tSL=0,tA=0,tOR=0;
-
-  // ── SECTION 1: Category-wise Summary ──
-  var lines=[];
-  lines.push('DAILY SUMMARY REPORT - KATKONA 1&2 INCLINE SECL');
-  lines.push('Date: '+dsrFmtDate(date));
-  lines.push('');
-  lines.push('SUMMARY,PRESENT TOTAL,REST,LEAVE (CL/EL),SICK LEAVE,ABSENT,ON ROLL');
-  for(var i=0;i<cats.length;i++){
-    var cat=cats[i];var d=data[cat]||{};var or=onroll[cat]||0;
-    lines.push(cat+','+(d.P||0)+','+(d.R||0)+','+(d.L||0)+','+(d.SL||0)+','+(d.A||0)+','+or);
-    tP+=d.P||0;tR+=d.R||0;tL+=d.L||0;tSL+=d.SL||0;tA+=d.A||0;tOR+=or;
-  }
-  lines.push('TOTAL,'+tP+','+tR+','+tL+','+tSL+','+tA+','+tOR);
-
-  // ── SECTION 2: Employee-wise Present List ──
-  lines.push('');
-  lines.push('');
-  lines.push('EMPLOYEE-WISE PRESENT LIST');
-  lines.push('S.NO,EMP ID,NAME,CATEGORY,STATUS');
-
-  // Bio present lookup from bioRawData for this date
-  var bday=bioRawData[date]||{};
-  var catmap=dsrData.catmap||{};
-  var bioPresent={};
-  var eids=Object.keys(bday);
-  for(var i=0;i<eids.length;i++){
-    var eid=eids[i];
-    var info=bday[eid];
-    if(info.status==='P'||info.code==='P') bioPresent[String(eid)]=true;
-  }
-
-  // Full employee list from catmap — saare employees, present ho ya na ho
-  var fullList=[];
-  var allEids=Object.keys(catmap);
-  for(var i=0;i<allEids.length;i++){
-    var eid=allEids[i];
-    var emp=catmap[eid];
-    fullList.push({eid:eid,name:emp.name,cat:emp.cat,status:bioPresent[String(eid)]?'P':'A'});
-  }
-
-  // Roster order index
-  var rosterIdx={};
-  for(var ri=0;ri<S.emps.length;ri++) rosterIdx[String(S.emps[ri].i)]=ri;
-
-  // Sort: category order first, then roster sequence
-  fullList.sort(function(a,b){
-    var ci=DSR_CATS.indexOf(a.cat),cj=DSR_CATS.indexOf(b.cat);
-    if(ci!==cj) return (ci<0?999:ci)-(cj<0?999:cj);
-    var ria=rosterIdx[String(a.eid)]!==undefined?rosterIdx[String(a.eid)]:9999;
-    var rib=rosterIdx[String(b.eid)]!==undefined?rosterIdx[String(b.eid)]:9999;
-    return ria-rib;
-  });
-
-  // Group by category with subtotals
-  var curCat='';var sno=1;
-  var catPresent=0;var catTotal=0;var totalPresent=0;var totalAll=0;
-  for(var i=0;i<fullList.length;i++){
-    var emp=fullList[i];
-    if(emp.cat!==curCat){
-      if(curCat!=='') lines.push(',,'+curCat+' — Present: '+catPresent+' / On Roll: '+catTotal+',,');
-      curCat=emp.cat; catPresent=0; catTotal=0;
-      lines.push('');
-      lines.push(',,['+curCat+'],,');
-    }
-    lines.push(sno+','+emp.eid+','+emp.name+','+emp.cat+','+(emp.status==='P'?'P (Present)':'A (Absent/No Bio)'));
-    sno++; catTotal++; totalAll++;
-    if(emp.status==='P'){catPresent++;totalPresent++;}
-  }
-  if(curCat!=='') lines.push(',,'+curCat+' — Present: '+catPresent+' / On Roll: '+catTotal+',,');
-  lines.push('');
-  lines.push('GRAND TOTAL,,,,Present: '+totalPresent+' / On Roll: '+totalAll);
-
-  var csv=lines.join('\n');
-  var blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
-  a.href=url; a.download='DSR_'+date+'.csv';
-  document.body.appendChild(a); a.click();
-  setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},500);
-  toast('DSR + Employee list downloaded!');
-}
-
-function dsrDownloadExcel(){
-  try{
-    var dateEl=document.getElementById('dsr-date');
-    var date=dateEl?dateEl.value:S.dt;
-    if(!date){alert('Date select karo!');return;}
-    var data=dsrGetEntryData();
-    var cats=Object.keys(data);
-    if(cats.length===0){alert('Koi data nahi hai! Pehle catmap upload karo.');return;}
-    dsrMakeXlsx(date,data);
-  }catch(err){alert('Download error: '+err.message);}
-}
-
-// ─── SMS NOTIFICATION PANEL ─────────────────────────────────────
-function bioShowSMSPanel(){
-  const smsEl=document.getElementById('bio-sms-section');
-  if(!smsEl)return;
-  const bioData=window._bioData;
-  if(!bioData||!Object.keys(bioData).length){smsEl.style.display='none';return;}
-  const savedKey=localStorage.getItem('fast2sms_key')||'';
-  let withPhone=0,withoutPhone=0;
-  Object.keys(bioData).forEach(eid=>{
-    const md=mdData.find(function(m){return m.pid===eid;});
-    const ph=((md&&(md.phone||md.altPhone||md.cug))||'').replace(/\s/g,'');
-    if(ph&&ph.length>=10)withPhone++;else withoutPhone++;
-  });
-  const total=Object.keys(bioData).length;
-  smsEl.style.display='block';
-  smsEl.innerHTML=`<div class="cd">
-    <div style="padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.04);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
-      <div>
-        <div style="font-size:13px;font-weight:700;color:#a5b4fc">📱 SMS Notifications</div>
-        <div style="font-size:10px;color:#64748b;margin-top:2px">${withPhone} employees with phone · ${withoutPhone} without</div>
-      </div>
-      <a href="https://www.fast2sms.com/dashboard/wallet" target="_blank" style="font-size:9px;color:#818cf8;text-decoration:none">Check Balance ↗</a>
-    </div>
-    <div style="padding:12px 14px">
-      <div style="margin-bottom:12px">
-        <div class="cl" style="margin-bottom:4px">Fast2SMS API Key</div>
-        <div style="display:flex;gap:6px">
-          <input type="password" class="inp" id="f2s-key" placeholder="Paste API key here..." value="${savedKey}" style="flex:1;font-size:11px">
-          <button class="btn bg2" style="font-size:10px;padding:5px 10px" onclick="bioSaveSMSKey()">💾 Save</button>
-        </div>
-        <div style="font-size:9px;color:#4b5563;margin-top:3px">
-          <a href="https://www.fast2sms.com" target="_blank" style="color:#818cf8;text-decoration:none">fast2sms.com</a> → Developer → API → Copy key · Free ₹50 credit milega registration pe
-        </div>
-      </div>
-      <div style="background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.1);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:10px;color:#94a3b8">
-        <div style="font-weight:600;color:#a5b4fc;margin-bottom:4px">Message Logic:</div>
-        <div>✅ <b style="color:#16a34a">Normal (7h+):</b> "Biometric IN &amp; OUT marked successfully."</div>
-        <div style="margin-top:2px">⚠️ <b style="color:#ca8a04">Short Duty (&lt;7h):</b> IN time + OUT time + Work hours</div>
-        <div style="margin-top:2px">❌ <b style="color:#f87171">Skipped (no OUT):</b> "IN marked, OUT not captured."</div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn bp" style="font-size:11px" onclick="bioSendAllSMS()">📤 Send All (${withPhone})</button>
-        <button class="btn bg2" style="font-size:11px" onclick="bioToggleSMSSelect()">☑️ Select &amp; Send</button>
-        <button class="btn bg2" style="font-size:10px;padding:5px 8px" onclick="bioSMSDebug()">🔍 Debug</button>
-      </div>
-      <div id="sms-select-panel" style="margin-top:10px;display:none"></div>
-      <div id="sms-send-status" style="margin-top:10px"></div>
-    </div>
-  </div>`;
-}
-
-function bioSaveSMSKey(){
-  const k=(document.getElementById('f2s-key')||{}).value||'';
-  if(!k.trim()){toast('API Key daalo!',false);return;}
-  localStorage.setItem('fast2sms_key',k.trim());
-  toast('✅ API Key saved!');
-}
-
-function bioGetSMSMsg(bd,eid){
-  const date=bd?bd.date||'':'';
-  let dStr=date;
-  if(/^\d{4}-\d{2}-\d{2}$/.test(date)){const p=date.split('-');dStr=p[2]+'/'+p[1]+'/'+p[0];}
-
-  const HEADER='KATKONA 1&2 INCLINE';
-  const sap=window._sapData&&eid?window._sapData[eid]||{}:{};
-  const code=window._sapCodeData&&eid?window._sapCodeData[eid]||'':'';
-
-  // Code from entry (R, A, CL, SL, OD, EL etc.)
-  if(code){
-    const codeLabels={'R':'R - Vishram','A':'A - Anupasthit','CL':'CL - Aakashmik Avkash','SL':'SL - Bimari Avkash','EL':'EL - Arjit Avkash','OD':'OD - On Duty','WE':'WE - Sapthik Avkash','HD':'HD - Avkash Divas','HE':'HE - Avkash Purv','S':'S - Sunday'};
-    const cLabel=codeLabels[code]||code;
-    return HEADER+'\nDt: '+dStr+'\nCode: '+cLabel;
-  }
-
-  // SAP based — ABSENT
-  if(sap.actType==='ABSENT'||bd.status==='skip'){
-    const hasIn=!!(bd&&bd.inT&&bd.inT!=='—');
-    const hasOut=!!(bd&&bd.outT&&bd.outT!=='—');
-    let reason='IN/OUT dono darj nahi';
-    if(hasIn&&!hasOut) reason='IN darj, OUT nahi';
-    else if(!hasIn&&hasOut) reason='OUT darj, IN nahi';
-    return HEADER+'\nDt: '+dStr+'\nIN: '+(bd&&bd.inT||'--')+' OUT: '+(bd&&bd.outT||'--')+'\nStatus: Absent | '+reason;
-  }
-
-  // SAP based — LATE
-  if(sap.actType==='LATE'){
-    return HEADER+'\nDt: '+dStr+'\nIN: '+bd.inT+' OUT: '+(bd.outT||'--')+'\nWork: '+bd.work+'\nStatus: LATE\nSch: '+(sap.schedIn||'?')+'-'+(sap.schedOut||'?');
-  }
-
-  // Short duty
-  if(bd.status==='short'){
-    return HEADER+'\nDt: '+dStr+'\nIN: '+bd.inT+' OUT: '+bd.outT+'\nWork: '+bd.work+'\nSTATUS: SHORT DUTY';
-  }
-
-  // Normal present
-  return HEADER+'\nDt: '+dStr+'\nIN: '+bd.inT+' OUT: '+(bd.outT||'--')+'\nWork: '+bd.work+'\nStatus: Present OK';
-}
-
-function bioToggleSMSSelect(){
-  const p=document.getElementById('sms-select-panel');
-  if(!p)return;
-  if(p.style.display==='none'){bioRenderSMSSelect();p.style.display='block';
-    // Auto-select all with phone after render
-    setTimeout(function(){bioSMSChkAll(true);},50);
-  }
-  else p.style.display='none';
-}
-
-function bioRenderSMSSelect(){
-  const p=document.getElementById('sms-select-panel');
-  if(!p)return;
-  const bioData=window._bioData;
-  if(!bioData)return;
-  const rows=[];
-  Object.entries(bioData).forEach(function(entry){
-    const eid=entry[0],bd=entry[1];
-    const md=mdData.find(function(m){return m.pid===eid;})||{};
-    const phone=((md.phone||md.altPhone||md.cug)||'').replace(/\s/g,'');
-    const emp=S.emps.find(function(e){return e.i===eid;})||{};
-    const name=emp.n||eid;
-    const desig=emp.d||'';
-    const hasPhone=phone.length>=10;
-    rows.push({eid,name,desig,phone,bd,hasPhone,msg:bioGetSMSMsg(bd,eid)});
-  });
-  rows.sort(function(a,b){return (b.hasPhone?1:0)-(a.hasPhone?1:0)||(a.name>b.name?1:-1);});
-  const statusColors={P:'#16a34a',U:'#f59e0b',short:'#ca8a04',skip:'#f87171'};
-  const statusLabels={P:'P',U:'U',short:'SHORT',skip:'SKIP'};
-  let h=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center">
-    <input type="text" class="inp" id="sms-search" placeholder="Search name / emp code..." style="max-width:160px;font-size:10px" oninput="bioSMSSearch()">
-    <select class="inp" id="sms-status-filter" style="max-width:110px;font-size:10px" onchange="bioSMSFilterRows()">
-      <option value="all">All Status</option>
-      <option value="P">Normal (P)</option>
-      <option value="U">Night (U)</option>
-      <option value="short">Short Duty</option>
-      <option value="skip">Skipped</option>
-    </select>
-    <button class="btn bg2" style="font-size:9px;padding:3px 8px" onclick="bioSMSChkAll(true)">Select All</button>
-    <button class="btn bg2" style="font-size:9px;padding:3px 8px" onclick="bioSMSChkAll(false)">Deselect All</button>
-    <button class="btn bp" style="font-size:10px" onclick="bioSendSelectedSMS()">📤 Send Selected (<span id="sms-sel-count">0</span>)</button>
-  </div>
-  <div style="max-height:40vh;overflow-y:auto;border:1px solid rgba(255,255,255,.05);border-radius:8px">
-    <table class="tbl">
-      <thead><tr>
-        <th style="width:28px"><input type="checkbox" id="sms-chk-all" onchange="bioSMSChkAll(this.checked)" style="cursor:pointer"></th>
-        <th class="sk">Name</th>
-        <th>Phone</th>
-        <th>St.</th>
-        <th style="text-align:left;min-width:180px">Message Preview</th>
-      </tr></thead>
-      <tbody id="sms-emp-list">`;
-  rows.forEach(function(r){
-    const sc=statusColors[r.bd.status]||'#94a3b8';
-    const sl=statusLabels[r.bd.status]||r.bd.status;
-    const ph=r.phone||'—';
-    h+=`<tr data-status="${r.bd.status}" data-eid="${r.eid}" data-name="${r.name.toLowerCase()}" style="${r.hasPhone?'':'opacity:.38'}">
-      <td><input type="checkbox" class="sms-chk" data-eid="${r.eid}" ${r.hasPhone?'':'disabled'} onchange="bioUpdateSMSCount()" style="cursor:pointer"></td>
-      <td class="sk" style="font-size:10px">${r.name}${r.desig?'<br><span style="color:#4b5563;font-size:9px">'+r.desig+'</span>':''}</td>
-      <td style="font-size:10px;font-family:'JetBrains Mono',monospace;color:${r.hasPhone?'#a5b4fc':'#f87171'}">${ph}</td>
-      <td><span style="color:${sc};font-size:9px;font-weight:700">${sl}</span></td>
-      <td style="font-size:9px;color:#94a3b8;text-align:left;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.msg}</td>
-    </tr>`;
-  });
-  h+=`</tbody></table></div>`;
-  p.innerHTML=h;
-  bioUpdateSMSCount();
-}
-
-function bioSMSChkAll(checked){
-  document.querySelectorAll('.sms-chk:not(:disabled)').forEach(function(c){c.checked=checked;});
-  const a=document.getElementById('sms-chk-all');if(a)a.checked=checked;
-  bioUpdateSMSCount();
-}
-
-function bioSMSFilterRows(){
-  const f=(document.getElementById('sms-status-filter')||{}).value||'all';
-  const q=((document.getElementById('sms-search')||{}).value||'').toLowerCase().trim();
-  document.querySelectorAll('#sms-emp-list tr').forEach(function(tr){
-    const statusOk=(f==='all'||tr.dataset.status===f);
-    const searchOk=!q||(tr.dataset.name||'').includes(q)||(tr.dataset.eid||'').toLowerCase().includes(q);
-    tr.style.display=(statusOk&&searchOk)?'':'none';
-  });
-}
-
-function bioSMSSearch(){
-  bioSMSFilterRows();
-}
-
-function bioUpdateSMSCount(){
-  const n=document.querySelectorAll('.sms-chk:checked').length;
-  const el=document.getElementById('sms-sel-count');if(el)el.textContent=n;
-}
-
-async function bioSendAllSMS(){
-  const bioData=window._bioData;
-  if(!bioData||!Object.keys(bioData).length){toast('Pehle biometric process karo!',false);return;}
-  await bioSendSMSToEids(Object.keys(bioData));
-}
-
-async function bioSendSelectedSMS(){
-  const checked=Array.from(document.querySelectorAll('.sms-chk:checked'));
-  const eids=checked.map(function(c){return c.dataset.eid;});
-  if(!eids.length){toast('Koi employee select nahi!',false);return;}
-  await bioSendSMSToEids(eids);
-}
-
-function bioPrepareSMSList(eids){
-  const bioData=window._bioData||{};
-  const list=[];
-  let noPhone=0,date='';
-  eids.forEach(function(eid){
-    const bd=bioData[eid];if(!bd)return;
-    if(!date)date=bd.date;
-    // Try pid match, then try matching with roster emp
-    let md=mdData.find(function(m){return String(m.pid).trim()===String(eid).trim();});
-    if(!md){
-      const emp=S.emps.find(function(e){return e.i===eid;});
-      if(emp) md=mdData.find(function(m){return String(m.pid).trim()===String(emp.i).trim()||String(m.sn).trim()===String(emp.s||'').trim();});
-    }
-    const rawPhone=(md&&(md.phone||md.altPhone||md.cug))||'';
-    const phone=rawPhone.replace(/\s/g,'').replace(/[^0-9+]/g,'');
-    const num=phone.replace(/[^0-9]/g,'').slice(-10);
-    if(!num||num.length<10){noPhone++;return;}
-    list.push({eid,num,msg:bioGetSMSMsg(bd,eid),status:bd.status});
-  });
-  return{list,noPhone,date};
-}
-
-function bioSMSDebug(){
-  const statusEl=document.getElementById('sms-send-status');
-  if(!statusEl)return;
-  const bioData=window._bioData||{};
-  const eids=Object.keys(bioData);
-  if(!eids.length){statusEl.innerHTML='<div style="color:#f87171;font-size:11px">Pehle biometric process karo!</div>';return;}
-  const{list,noPhone}=bioPrepareSMSList(eids);
-  const mdLoaded=mdData&&mdData.length>0;
-  let h=`<div class="sc" style="margin-top:4px">
-    <div style="font-size:11px;font-weight:700;color:#a5b4fc;margin-bottom:8px">🔍 Debug Info</div>
-    <div style="font-size:10px;color:#94a3b8;line-height:1.8">
-      Master Data loaded: <b style="color:${mdLoaded?'#16a34a':'#f87171'}">${mdLoaded?mdData.length+' records':'❌ NOT LOADED — Master Data tab pe jaao!'}</b><br>
-      Bio employees: <b style="color:#a5b4fc">${eids.length}</b><br>
-      Phone found: <b style="color:#16a34a">${list.length}</b><br>
-      No phone / not found: <b style="color:#f87171">${noPhone}</b>
-    </div>`;
-  if(list.length>0){
-    h+=`<div style="font-size:10px;font-weight:600;color:#94a3b8;margin-top:8px;margin-bottom:4px">Sample (first 3):</div>`;
-    list.slice(0,3).forEach(function(r){
-      h+=`<div style="font-size:9px;background:rgba(255,255,255,.03);padding:5px 7px;border-radius:5px;margin-bottom:3px;font-family:'JetBrains Mono',monospace">
-        ${r.eid} → ${r.num} | ${r.msg.substring(0,60)}...
-      </div>`;
-    });
-  }
-  if(!mdLoaded){
-    h+=`<div style="margin-top:8px;padding:8px;background:rgba(248,113,113,.08);border-radius:6px;font-size:10px;color:#fca5a5">
-      ⚠️ Master Data tab pe jaao → Excel upload karo → Wapas aao SMS bhejo
-    </div>`;
-  }
-  h+=`</div>`;
-  statusEl.innerHTML=h;
-}
-
-async function bioSendSMSToEids(eids){
-  const apiKey=((document.getElementById('f2s-key')||{}).value||localStorage.getItem('fast2sms_key')||'').trim();
-  if(!apiKey){toast('API Key daalo pehle! Save button dabao.',false);return;}
-  const bioData=window._bioData;
-  if(!bioData||!Object.keys(bioData).length){toast('Pehle biometric process karo!',false);return;}
-  let statusEl=document.getElementById('sms-send-status');
-  if(!statusEl){
-    // Create status div if missing
-    const panel=document.getElementById('bio-sms-section');
-    if(panel){
-      statusEl=document.createElement('div');
-      statusEl.id='sms-send-status';
-      statusEl.style.marginTop='10px';
-      panel.appendChild(statusEl);
-    }else{toast('SMS panel nahi mila — Biometric tab pe jao.',false);return;}
-  }
-
-  const{list,noPhone,date}=bioPrepareSMSList(eids);
-
-  if(!list.length){
-    let msg='Kisi ka phone number nahi mila!';
-    if(!mdData||!mdData.length) msg='Master Data load nahi hai! Pehle Master Data tab pe Excel upload karo.';
-    statusEl.innerHTML=`<div style="padding:10px;background:rgba(248,113,113,.08);border-radius:8px;font-size:11px;color:#fca5a5">❌ ${msg}</div>`;
-    return;
-  }
-
-  statusEl.innerHTML='<div style="color:#a5b4fc;font-size:11px">⏳ Preparing '+list.length+' messages...</div>';
-
-  // Group: same-msg types batch, short individual
-  let dStr=date||'';
-  if(/^\d{4}-\d{2}-\d{2}$/.test(dStr)){const p=dStr.split('-');dStr=p[2]+'/'+p[1]+'/'+p[0];}
-  // Ab har employee ka message alag hai (SAP + code se personalized)
-  // So send individually with throttle
-  const allItems=list.map(function(r){return{num:r.num,msg:r.msg};});
-
-  let sent=0,failed=0,errorSet=new Set();
-
-  async function callF2S(nums,msg){
-    const base='https://www.fast2sms.com/dev/bulkV2';
-    const params='?authorization='+encodeURIComponent(apiKey)+'&route=q&message='+encodeURIComponent(msg)+'&language=english&flash=0&numbers='+nums.join(',');
-    const urls=[
-      base+params,
-      'https://corsproxy.io/?'+encodeURIComponent(base+params),
-      'https://api.allorigins.win/raw?url='+encodeURIComponent(base+params)
-    ];
-    let lastErr='';
-    for(let u=0;u<urls.length;u++){
-      try{
-        const res=await fetch(urls[u]);
-        const text=await res.text();
-        let data;
-        try{data=JSON.parse(text);}catch(e){data=null;}
-        if(data&&data.return===true){sent+=nums.length;return;}
-        else if(data){failed+=nums.length;errorSet.add(data.message||'API rejected');return;}
-        else{lastErr='Bad response: '+text.substring(0,80);}
-      }catch(e){lastErr=e.message;}
-    }
-    failed+=nums.length;
-    errorSet.add('All attempts failed: '+lastErr);
-  }
-
-  for(let i=0;i<allItems.length;i++){
-    statusEl.innerHTML='<div style="color:#a5b4fc;font-size:11px">⏳ Sending '+(i+1)+'/'+allItems.length+'...</div>';
-    await callF2S([allItems[i].num],allItems[i].msg);
-    if(i%5===4) await new Promise(function(r){setTimeout(r,500);});
-  }
-
-  const ok=sent>0&&!failed;
-  const partial=sent>0&&failed>0;
-  const allFailed=sent===0&&failed>0;
-  const errs=[...errorSet].join(' | ');
-  statusEl.innerHTML=`<div class="sc" style="margin-top:4px">
-    <div style="font-size:12px;font-weight:700;color:${ok?'#16a34a':partial?'#f59e0b':'#f87171'};margin-bottom:6px">
-      ${ok?'✅ SMS Sent!':partial?'⚠️ Partial Success':allFailed?'❌ Send Failed':'ℹ️ Nothing to send'}
-    </div>
-    <div style="font-size:11px;color:#94a3b8">
-      Sent: <b style="color:#16a34a">${sent}</b> &nbsp;·&nbsp;
-      Failed: <b style="color:#f87171">${failed}</b> &nbsp;·&nbsp;
-      No Phone: <b style="color:#64748b">${noPhone}</b>
-    </div>
-    ${errs?`<div style="margin-top:8px;padding:8px;background:rgba(248,113,113,.08);border-radius:6px;font-size:10px;color:#fca5a5;word-break:break-all">
-      <b>Error:</b> ${errs}
-    </div>`:''}
-    ${allFailed?`<div style="margin-top:8px;padding:8px;background:rgba(99,102,241,.07);border-radius:6px;font-size:10px;color:#a5b4fc">
-      💡 <b>Tip:</b> Local HTML file se CORS block ho sakta hai. Fast2SMS Dashboard pe jaao →
-      <a href="https://www.fast2sms.com/dashboard/bulk-sms" target="_blank" style="color:#818cf8">Bulk SMS</a>
-      → manually numbers + message paste karo.
-    </div>`:''}
-  </div>`;
-  toast(sent>0?sent+' SMS bheje!':'SMS send nahi hua — error dekho',sent>0);
-  // Save log for PDF
-  window._smsSentLog={date:new Date().toLocaleString('en-IN'),bioDate:date||'',total:list.length,sent:sent,failed:failed,noPhone:noPhone,
-    entries:list.map(function(r){var emp=S.emps.find(function(e){return e.i===r.eid;})||{};return{eid:r.eid,name:emp.n||r.eid,phone:r.num,msg:r.msg,status:r.status};})};
-  if(sent>0){
-    var pdfBtn=document.createElement('div');
-    pdfBtn.style.marginTop='10px';
-    pdfBtn.innerHTML='<button class="btn bp" style="font-size:11px;background:linear-gradient(135deg,#dc2626,#ef4444)" onclick="smsPDFRecord()">📄 PDF Record Download</button>';
-    var se=document.getElementById('sms-send-status');
-    if(se)se.appendChild(pdfBtn);
-  }
-}
-// ─────────────────────────────────────────────────────────────────
-
-function smsPDFRecord(){
-  var log=window._smsSentLog;
-  if(!log){toast('Pehle SMS bhejo!',false);return;}
-  var rows=log.entries.map(function(e,i){
-    return '<tr style="background:'+(i%2===0?'#fff':'#f8f9fa')+'">'
-      +'<td style="padding:4px 8px;border:1px solid #ddd;text-align:center">'+(i+1)+'</td>'
-      +'<td style="padding:4px 8px;border:1px solid #ddd">'+e.name+'</td>'
-      +'<td style="padding:4px 8px;border:1px solid #ddd;text-align:center">'+e.eid+'</td>'
-      +'<td style="padding:4px 8px;border:1px solid #ddd;text-align:center">'+e.phone+'</td>'
-      +'<td style="padding:4px 8px;border:1px solid #ddd;font-size:11px">'+e.msg.replace(/\n/g,'<br>')+'</td>'
-      +'</tr>';
-  }).join('');
-  var bioDate=log.bioDate||'';
-  if(/^\d{4}-\d{2}-\d{2}$/.test(bioDate)){var p=bioDate.split('-');bioDate=p[2]+'/'+p[1]+'/'+p[0];}
-  var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>SMS Record</title>'
-    +'<style>body{font-family:Arial,sans-serif;margin:20px;font-size:12px}'
-    +'.hdr{text-align:center;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:12px}'
-    +'.hdr h2{margin:0;font-size:16px;text-transform:uppercase}'
-    +'.hdr h3{margin:4px 0;font-size:13px}'
-    +'.hdr p{margin:2px 0;font-size:11px}'
-    +'.sum{background:#eef2f7;padding:8px 12px;border-radius:4px;margin-bottom:12px;font-size:11px}'
-    +'table{width:100%;border-collapse:collapse;font-size:11px}'
-    +'th{background:#1e3a5f;color:#fff;padding:6px 8px;border:1px solid #ccc;text-align:center}'
-    +'.ftr{margin-top:16px;text-align:right;font-size:10px;color:#666}'
-    +'@media print{.nobtn{display:none}}</style></head><body>'
-    +'<div class="hdr"><h2>South Eastern Coalfields Limited</h2>'
-    +'<h3>Katkona 1&2 Incline, Katkona Sub Area, BAIKUNTHPUR AREA</h3>'
-    +'<p><b>SMS Notification Record</b> &nbsp;|&nbsp; Attendance Date: <b>'+bioDate+'</b></p></div>'
-    +'<div class="sum"><b>Sent On:</b> '+log.date
-    +' &nbsp;|&nbsp; <b>Total Employees:</b> '+log.total
-    +' &nbsp;|&nbsp; <b style="color:green">SMS Sent: '+log.sent+'</b>'
-    +' &nbsp;|&nbsp; <b style="color:red">Failed: '+log.failed+'</b>'
-    +' &nbsp;|&nbsp; No Phone: '+log.noPhone+'</div>'
-    +'<table><thead><tr>'
-    +'<th style="width:35px">SN</th>'
-    +'<th style="text-align:left">Employee Name</th>'
-    +'<th style="width:85px">Emp ID</th>'
-    +'<th style="width:95px">Mobile No.</th>'
-    +'<th style="text-align:left">Message Sent</th>'
-    +'</tr></thead><tbody>'+rows+'</tbody></table>'
-    +'<div class="ftr">Attendance Manager | Katkona 1&2 Incline<br>Printed: '+new Date().toLocaleString('en-IN')+'</div>'
-    +'<br><button class="nobtn" onclick="window.print()" style="padding:8px 20px;background:#1e3a5f;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px">Print / Save as PDF</button>'
-    +'</body></html>';
-  var w=window.open('','_blank');
-  if(w){w.document.write(html);w.document.close();setTimeout(function(){w.print();},600);}
-  else toast('Popup blocked! Browser mein popup allow karo.',false);
-}
-
-// ─── SAP BIOMETRIC MERGE ─────────────────────────────────────────
-function sapInitSection(){
-  const el=document.getElementById('bio-sap-section');
-  if(!el)return;
-  const sapLoaded=window._sapData&&Object.keys(window._sapData).length>0;
-  const cnt=sapLoaded?Object.keys(window._sapData).length:0;
-  el.innerHTML=`<div class="cd">
-    <div style="padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.04)">
-      <div style="font-size:13px;font-weight:700;color:#f59e0b">📋 SAP Biometric Report — Merge</div>
-      <div style="font-size:10px;color:#64748b;margin-top:2px">SAP se: Act Type, Shift time, Position · Biometric se: Actual IN/OUT, Work hours</div>
-    </div>
-    <div style="padding:12px 14px">
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-        <input type="file" id="sap-bio-file" accept=".xlsx,.xls" style="font-size:11px;color:#94a3b8;flex:1">
-        <button class="btn bp" style="font-size:11px;background:linear-gradient(135deg,#d97706,#f59e0b)" onclick="sapLoad()">📥 Load SAP File</button>
-      </div>
-      <div id="sap-load-status" style="font-size:11px;color:${sapLoaded?'#16a34a':'#64748b'}">
-        ${sapLoaded?'✅ '+cnt+' SAP records loaded':'SAP Excel file upload karo (e.g. 01_05_2026.XLSX)'}
-      </div>
-      ${sapLoaded?`<div style="margin-top:8px"><button class="btn bp" style="font-size:11px;background:linear-gradient(135deg,#7c3aed,#a855f7)" onclick="sapShowMerge()">🔀 Merge &amp; Show Report</button></div>`:''}
-      <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.05)">
-        <div style="font-size:10px;font-weight:600;color:#94a3b8;margin-bottom:6px">📋 Entry Codes Excel (Optional)</div>
-        <div style="font-size:9px;color:#4b5563;margin-bottom:6px">Bio Entry Report Excel upload karo — Skipped/No Record sheets ka Code remark mein aa jayega</div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <input type="file" id="sap-codes-file" accept=".xlsx,.xls" style="font-size:10px;color:#94a3b8;flex:1">
-          <button class="btn bg2" style="font-size:10px;padding:5px 10px" onclick="sapLoadCodes()">📥 Load Codes</button>
-        </div>
-        <div id="sap-codes-status" style="font-size:10px;margin-top:4px;color:${window._sapCodeData&&Object.keys(window._sapCodeData||{}).length?'#16a34a':'#4b5563'}">
-          ${window._sapCodeData&&Object.keys(window._sapCodeData||{}).length?'✅ '+Object.keys(window._sapCodeData).length+' employee codes loaded':'No codes loaded'}
-        </div>
-      </div>
-  </div>
-  <div id="sap-merge-result" style="margin-top:10px"></div>`;
-}
-
-function sapLoad(){
-  const input=document.getElementById('sap-bio-file');
-  const file=input&&input.files[0];
-  if(!file){toast('SAP file select karo!',false);return;}
-  const statusEl=document.getElementById('sap-load-status');
-  if(statusEl)statusEl.innerHTML='<span style="color:#a5b4fc">⏳ Loading...</span>';
-  const reader=new FileReader();
-  reader.onload=function(e){
-    try{
-      const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-      if(rows.length<2){toast('SAP file empty!',false);return;}
-      const fmtT=function(val){
-        if(!val)return'';
-        if(val instanceof Date)return String(val.getHours()).padStart(2,'0')+':'+String(val.getMinutes()).padStart(2,'0');
-        if(typeof val==='number'){const mins=Math.round(val*1440)%1440;return String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0');}
-        return String(val).substring(0,5);
-      };
-      const sapMap={};
-      for(let i=1;i<rows.length;i++){
-        const r=rows[i];
-        const pid=String(r[0]||'').trim();
-        if(!pid)continue;
-        sapMap[pid]={name:r[1]||'',date:r[2]instanceof Date?r[2].toISOString().substring(0,10):'',
-          sapIn:fmtT(r[3]),sapOut:fmtT(r[4]),actType:r[5]||'',
-          schedIn:fmtT(r[6]),schedOut:fmtT(r[7]),regType:r[8]||'',
-          actTotal:fmtT(r[10]),contract:r[11]||'',position:r[17]||'',payPoint:r[28]||''};
-      }
-      window._sapData=sapMap;
-      const cnt=Object.keys(sapMap).length;
-      toast(cnt+' SAP records loaded!');
-      sapInitSection();
-      if(window._bioData&&Object.keys(window._bioData).length)sapShowMerge();
-    }catch(err){toast('SAP file error: '+err.message,false);}
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-function sapAutoMerge(){
-  if(window._sapData&&Object.keys(window._sapData).length&&window._bioData&&Object.keys(window._bioData).length){
-    sapInitSection();setTimeout(sapShowMerge,100);
-  }else{sapInitSection();}
-}
-
-function sapShowMerge(){
-  const sapData=window._sapData,bioData=window._bioData;
-  const mergeEl=document.getElementById('sap-merge-result');
-  if(!mergeEl)return;
-  if(!sapData){toast('Pehle SAP file load karo!',false);return;}
-  if(!bioData||!Object.keys(bioData).length){toast('Pehle biometric process karo!',false);return;}
-  const allEids=new Set([...Object.keys(bioData),...Object.keys(sapData)]);
-  const merged=[];
-  allEids.forEach(function(eid){
-    const sap=sapData[eid]||{};
-    sap._eid=eid;
-    merged.push({eid,bd:bioData[eid]||null,sap});
-  });
-  let present=0,late=0,absent=0,mismatch=0;
-  merged.forEach(function(m){
-    const at=m.sap.actType||'';
-    if(at==='PRESENT')present++;else if(at==='LATE')late++;else if(at==='ABSENT')absent++;
-    if(m.bd&&(m.bd.status==='P'||m.bd.status==='U'||m.bd.status==='short')&&at==='ABSENT')mismatch++;
-  });
-  let h=`<div class="cd">
-    <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04)">
-      <div style="font-size:13px;font-weight:700;color:#a5b4fc">🔀 Merged Report (${merged.length})</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:5px;font-size:10px">
-        <span style="color:#16a34a">✅ Present: ${present}</span>
-        <span style="color:#f59e0b">⏰ Late: ${late}</span>
-        <span style="color:#f87171">❌ Absent: ${absent}</span>
-        <span style="color:#f87171;font-weight:700;background:rgba(248,113,113,.1);padding:1px 6px;border-radius:4px">⚠️ Mismatch: ${mismatch}</span>
-      </div>
-    </div>
-    <div style="padding:8px 14px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      <select class="inp" id="sap-filter" style="max-width:130px;font-size:10px" onchange="sapFilterTable()">
-        <option value="all">All</option>
-        <option value="PRESENT">Present</option>
-        <option value="LATE">Late</option>
-        <option value="ABSENT">Absent</option>
-        <option value="mismatch">⚠️ Mismatch</option>
-      </select>
-      <input class="inp" id="sap-search" style="max-width:150px;font-size:10px" placeholder="Search name/ID..." oninput="sapFilterTable()">
-      <button class="btn bp" style="font-size:10px;background:linear-gradient(135deg,#059669,#10b981)" onclick="sapDownload()">⬇ Excel</button>
-      <button class="btn bp" style="font-size:10px;background:linear-gradient(135deg,#7c3aed,#a855f7)" onclick="sapSendSMSPanel()">📱 Send SMS</button>
-    </div>
-    <div id="sap-sms-panel" style="margin:0 14px 10px;display:none"></div>
-    <div style="overflow-x:auto;max-height:55vh;overflow-y:auto">
-    <table class="tbl"><thead><tr>
-      <th class="sk" style="text-align:left">Name</th>
-      <th>ID</th>
-      <th style="color:#a5b4fc">Bio IN</th>
-      <th style="color:#818cf8">Bio OUT</th>
-      <th style="color:#22c55e">Work</th>
-      <th>SAP Status</th>
-      <th style="color:#64748b">Sch.IN</th>
-      <th style="color:#64748b">Sch.OUT</th>
-      <th class="sk" style="text-align:left">Position</th>
-      <th>S/UG</th>
-      <th>Pay Pt</th>
-      <th class="sk" style="text-align:left;color:#f59e0b">Remark</th>
-    </tr></thead><tbody id="sap-merge-body">`;
-  merged.forEach(function(m){
-    const eid=m.eid,bd=m.bd,sap=m.sap;
-    const name=sap.name||((S.emps.find(function(e){return e.i===eid;})||{}).n)||eid;
-    const bioIn=bd?bd.inT||'—':'—',bioOut=bd?bd.outT||'—':'—',work=bd?bd.work||'—':'—';
-    const at=sap.actType||'—';
-    const mm=bd&&(bd.status==='P'||bd.status==='U'||bd.status==='short')&&at==='ABSENT';
-    const atC=at==='PRESENT'?'#16a34a':at==='LATE'?'#f59e0b':at==='ABSENT'?'#f87171':'#94a3b8';
-    // Surface/UG from roster emp.ct
-    const rEmp=S.emps.find(function(e){return e.i===eid;})||{};
-    const ct=rEmp.ct==='S'?'Sur':rEmp.ct==='U'?'UG':(sap.contract||'').indexOf('Under')>-1?'UG':(sap.contract||'').indexOf('Surface')>-1?'Sur':'—';
-    const wrkParts=(work||'').split(':');const wrkH=parseInt(wrkParts[0]||0);
-    const wC=work==='—'?'#64748b':wrkH<7?'#f59e0b':'#22c55e';
-    const remark=sapGetRemark(bd,sap,eid);
-    h+=`<tr data-acttype="${at}" data-mismatch="${mm}" data-name="${name.toLowerCase()}" data-eid="${eid}" style="${mm?'background:rgba(248,113,113,.07)':''}">
-      <td class="sk" style="font-size:10px">${name}${mm?'<span style="color:#f87171;font-size:8px;margin-left:3px">⚠️</span>':''}</td>
-      <td style="font-size:9px;font-family:'JetBrains Mono',monospace;color:#64748b">${eid}</td>
-      <td style="font-size:10px;font-weight:600;color:#a5b4fc">${bioIn}</td>
-      <td style="font-size:10px;font-weight:600;color:#818cf8">${bioOut}</td>
-      <td style="font-size:10px;font-weight:600;color:${wC}">${work}</td>
-      <td><span style="font-size:9px;font-weight:700;color:${atC}">${at}</span></td>
-      <td style="font-size:9px;color:#64748b">${sap.schedIn||'—'}</td>
-      <td style="font-size:9px;color:#64748b">${sap.schedOut||'—'}</td>
-      <td class="sk" style="font-size:9px;color:#94a3b8">${sap.position||'—'}</td>
-      <td style="font-size:9px;font-weight:600;color:${ct==='UG'?'#f59e0b':'#06b6d4'}">${ct}</td>
-      <td style="font-size:9px;color:#64748b">${sap.payPoint||'—'}</td>
-      <td class="sk" style="font-size:9px;color:${at==='LATE'?'#f59e0b':at==='ABSENT'?'#f87171':'#16a34a'};min-width:160px">${remark}</td>
-    </tr>`;
-  });
-  h+=`</tbody></table></div></div>`;
-  mergeEl.innerHTML=h;
-}
-
-function sapLoadCodes(){
-  const input=document.getElementById('sap-codes-file');
-  const file=input&&input.files[0];
-  if(!file){toast('Codes Excel select karo!',false);return;}
-  const reader=new FileReader();
-  reader.onload=function(e){
-    try{
-      const wb=XLSX.read(e.target.result,{type:'array'});
-      const codeMap={};
-      wb.SheetNames.forEach(function(sname){
-        const snu=sname.toUpperCase();
-        const isSkipped=snu.indexOf('SKIPPED')>-1;
-        const isNoRec=snu.indexOf('NO RECORD')>-1||snu.indexOf('NO-RECORD')>-1;
-        if(!isSkipped&&!isNoRec)return;
-        const ws=wb.Sheets[sname];
-        // Use array mode to handle unnamed columns reliably
-        const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-        if(rows.length<2)return;
-        const header=rows[0];
-        // Find Employee ID column index
-        let eidCol=-1,codeCol=-1;
-        header.forEach(function(h,i){
-          const hu=String(h||'').toUpperCase().trim();
-          if(hu==='EMPLOYEE ID'||hu==='EID'||hu==='PERSONNEL NO')eidCol=i;
-          // Code column: for Skipped=last col or unnamed; for NoRecord=REMARK
-          if(hu==='REMARK'||hu==='REMARKS'||hu==='CODE')codeCol=i;
-        });
-        // For Skipped: code is in last column (unnamed header)
-        if(isSkipped&&codeCol===-1) codeCol=header.length-1;
-        if(eidCol===-1||codeCol===-1)return;
-        for(var i=1;i<rows.length;i++){
-          const row=rows[i];
-          const eid=String(row[eidCol]||'').trim();
-          const code=String(row[codeCol]||'').trim();
-          if(eid&&code&&code.length<=5) codeMap[eid]=code;
-        }
-      });
-      window._sapCodeData=codeMap;
-      const cnt=Object.keys(codeMap).length;
-      const statusEl=document.getElementById('sap-codes-status');
-      if(statusEl)statusEl.innerHTML='<span style="color:#16a34a">✅ '+cnt+' employee codes loaded</span>';
-      toast(cnt+' codes loaded!');
-      if(window._sapData&&window._bioData&&document.getElementById('sap-merge-body'))sapShowMerge();
-    }catch(err){toast('Codes file error: '+err.message,false);}
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-function sapGetRemark(bd,sap,eid){
-  const at=sap.actType||'';
-  // Check manually entered code first
-  const empId=eid||sap._eid||'';
-  if(window._sapCodeData&&empId&&window._sapCodeData[empId]){
-    const c=window._sapCodeData[eid];
-    const cLabels={'R':'R - विश्राम (Rest)','A':'A - अनुपस्थित','CL':'CL - आकस्मिक अवकाश','SL':'SL - बीमारी अवकाश','EL':'EL - अर्जित अवकाश','WE':'WE - साप्ताहिक अवकाश','HD':'HD - अवकाश दिवस','HE':'HE - अवकाश पूर्व संध्या','OD':'OD - कार्य ड्यूटी'};
-    return cLabels[c]||(c+' - दर्ज कोड');
-  }
-  if(at==='PRESENT')return'';
-  const toM=function(t){if(!t||t==='—')return-1;const p=t.split(':');return parseInt(p[0]||0)*60+parseInt(p[1]||0);};
-  const biIn=toM(bd?bd.inT:null);
-  const biOut=toM(bd?bd.outT:null);
-  const scIn=toM(sap.schedIn);
-  const scOut=toM(sap.schedOut);
-  if(at==='LATE'){
-    const r=[];
-    if(biIn>0&&scIn>0&&biIn>scIn+15) r.push('शिफ्ट शुरू होने के '+(biIn-scIn)+' मिनट बाद उपस्थित हुए');
-    if(biOut>=0&&scOut>0&&biOut<scOut) r.push('निर्धारित समय से पहले OUT किया');
-    return r.length?r.join(' | '):'शिफ्ट समय के बाहर पंच';
-  }
-  if(at==='ABSENT'){
-    if(!bd)return'IN एवं OUT दोनों दर्ज नहीं';
-    const hasIn=!!(bd.inT&&bd.inT!=='—'&&bd.inT!=='');
-    const hasOut=!!(bd.outT&&bd.outT!=='—'&&bd.outT!=='');
-    if(!hasIn&&!hasOut)return'IN एवं OUT दोनों दर्ज नहीं';
-    if(hasIn&&!hasOut)return'उपस्थिति दर्ज, OUT दर्ज नहीं';
-    if(!hasIn&&hasOut)return'OUT दर्ज, उपस्थिति दर्ज नहीं';
-    if(hasIn&&hasOut&&scIn>0&&biIn>0&&Math.abs(biIn-scIn)>90)
-      return'निर्धारित पाली ('+sap.schedIn+'-'+sap.schedOut+') के अतिरिक्त अन्य पाली में कार्य किया';
-    return'निर्धारित पाली से बाहर पंच दर्ज';
-  }
-  return'';
-}
-
-function sapFilterTable(){
-  const f=((document.getElementById('sap-filter')||{}).value)||'all';
-  const q=((document.getElementById('sap-search')||{}).value||'').toLowerCase().trim();
-  document.querySelectorAll('#sap-merge-body tr').forEach(function(tr){
-    const fOk=f==='all'||(f==='mismatch'?tr.dataset.mismatch==='true':tr.dataset.acttype===f);
-    const sOk=!q||(tr.dataset.name||'').includes(q)||(tr.dataset.eid||'').includes(q);
-    tr.style.display=(fOk&&sOk)?'':'none';
-  });
-}
-
-function sapDownload(){
-  const bioData=window._bioData||{},sapData=window._sapData||{};
-  const allEids=new Set([...Object.keys(bioData),...Object.keys(sapData)]);
-  const wsData=[['Employee ID','Name','Bio IN','Bio OUT','Work Hours','SAP Status','Scheduled IN','Scheduled OUT','Position','Surface/UG','Pay Point','Mismatch','Remark']];
-  allEids.forEach(function(eid){
-    const bd=bioData[eid]||null,sap=sapData[eid]||{};
-    const name=sap.name||((S.emps.find(function(e){return e.i===eid;})||{}).n)||eid;
-    const at=sap.actType||'';
-    const mm=bd&&(bd.status==='P'||bd.status==='U'||bd.status==='short')&&at==='ABSENT'?'YES':'';
-    const rEmp2=S.emps.find(function(e){return e.i===eid;})||{};
-    const ctXl=rEmp2.ct==='S'?'On Surface':rEmp2.ct==='U'?'Underground':(sap.contract||'').indexOf('Under')>-1?'Underground':(sap.contract||'').indexOf('Surface')>-1?'On Surface':'';
-    wsData.push([eid,name,bd?bd.inT||'':'',bd?bd.outT||'':'',bd?bd.work||'':'',at,
-      sap.schedIn||'',sap.schedOut||'',sap.position||'',ctXl,
-      sap.payPoint||'',mm,sapGetRemark(bd,sap,eid)]);
-  });
-  const wb2=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb2,XLSX.utils.aoa_to_sheet(wsData),'Merged');
-  XLSX.writeFile(wb2,'SAP_Bio_Merged.xlsx');
-  toast('Excel downloaded!');
-}
-// ─────────────────────────────────────────────────────────────────
-
-function dsrDownloadDate(date){
-  var data=(dsrData.entries||{})[date];
-  if(!data){toast('Data nahi mila!',false);return;}
-  dsrMakeXlsx(date,data);
-  toast('Downloaded!');
-}
-
-function dsrUploadExcel(input){
-  var file=input.files[0];if(!file)return;
-  var reader=new FileReader();
-  reader.onload=function(e){
-    try{
-      var wb=XLSX.read(e.target.result,{type:'binary'});
-      var ws=wb.Sheets[wb.SheetNames[0]];
-      var rows=XLSX.utils.sheet_to_json(ws,{header:1});
-      var hIdx=-1,eC=-1,nC=-1,cC=-1;
-      for(var i=0;i<Math.min(5,rows.length);i++){
-        var row=rows[i].map(function(c){return String(c||'').trim().toUpperCase();});
-        var ei=-1,ni=-1,ci=-1;
-        for(var j=0;j<row.length;j++){
-          if(ei<0&&(row[j].indexOf('EMP')>=0||row[j].indexOf('ID')>=0||row[j].indexOf('CODE')>=0)) ei=j;
-          if(ni<0&&row[j].indexOf('NAME')>=0) ni=j;
-          if(ci<0&&(row[j].indexOf('CAT')>=0||row[j].indexOf('DESIG')>=0||row[j].indexOf('DEPT')>=0)) ci=j;
-        }
-        if(ei>=0&&ni>=0&&ci>=0){hIdx=i;eC=ei;nC=ni;cC=ci;break;}
-      }
-      if(hIdx<0){toast('Column nahi mila! EmpID/Name/Category columns chahiye',false);return;}
-      var catmap={};var total=0;
-      for(var i=hIdx+1;i<rows.length;i++){
-        var row=rows[i];
-        var id=String(row[eC]||'').trim();
-        var name=String(row[nC]||'').trim();
-        var cat=String(row[cC]||'').trim().toUpperCase();
-        if(!id||!name||!cat) continue;
-        catmap[id]={name:name,cat:cat};total++;
-      }
-      dsrData.catmap=catmap;
-      dsrSave();
-      toast(total+' employees loaded!');
-      render();
-    }catch(err){toast('Error: '+err.message,false);}
-  };
-  reader.readAsBinaryString(file);
-}
-
-</script></body></html>
+}</script></body></html>
