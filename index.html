@@ -7,6 +7,20 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<script>
+// Fallback if jsdelivr blocked (e.g. Brave shields)
+if(typeof docx==='undefined'){
+  var _ds=document.createElement('script');
+  _ds.src='https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/index.umd.min.js';
+  _ds.onerror=function(){
+    // Second fallback: unpkg
+    var _ds2=document.createElement('script');
+    _ds2.src='https://unpkg.com/docx@8.5.0/build/index.umd.js';
+    document.head.appendChild(_ds2);
+  };
+  document.head.appendChild(_ds);
+}
+</script>
 <script>if(typeof XLSX==='undefined'){document.write('<scr'+'ipt src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/scr'+'ipt>');}</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
@@ -615,10 +629,10 @@ function render(){
       <div style="background:rgba(99,102,241,.05);border:1px solid rgba(99,102,241,.1);border-radius:9px;padding:10px 12px;margin-bottom:14px">
         <div style="font-size:11px;font-weight:600;color:#a5b4fc;margin-bottom:4px">Rules</div>
         <div style="font-size:11px;color:#94a3b8;line-height:1.6">
-          <span style="color:#16a34a;font-weight:700">P</span> — IN ≠ OUT and work ≥ 7 hrs<br>
+          <span style="color:#16a34a;font-weight:700">P</span> — IN ≠ OUT and work ≥ 7:30 hrs<br>
           <span style="color:#f59e0b;font-weight:700">U</span> — IN after 6PM (night shift) with valid OUT ≥ 7 hrs<br>
           <span style="color:#f87171;font-weight:700">Skip</span> — IN = OUT (single punch)<br>
-          <span style="color:#ca8a04;font-weight:700">Short</span> — IN ≠ OUT but &lt; 7 hrs<br>
+          <span style="color:#ca8a04;font-weight:700">Short</span> — IN ≠ OUT but &lt; 7:30 hrs<br>
           <span style="color:#7c3aed;font-weight:700">Night Fix</span> — Next day file: IN between 5AM-9AM = OUT of previous night shift
         </div>
       </div>
@@ -1418,6 +1432,26 @@ function render(){
     else{vwKbInit();}
   }
 
+  else if(S.tab==='realtime'){
+    h+=`<div class="cd" style="padding:14px;margin-bottom:10px">
+      <div style="font-size:16px;font-weight:700;color:#a5b4fc;margin-bottom:4px">📡 Live Monitor</div>
+      <div style="font-size:11px;color:#4b5563;margin-bottom:12px">Daily biometric files upload karo — aaj aur kal ki — live attendance monitor karo.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div>
+          <label class="cl" style="display:block;margin-bottom:4px;font-size:11px">📅 Aaj ka file (Today)</label>
+          <input type="file" id="rt-today" accept=".xlsx,.xls" style="font-size:11px;color:#94a3b8;width:100%">
+        </div>
+        <div>
+          <label class="cl" style="display:block;margin-bottom:4px;font-size:11px">📅 Kal ka file (Yesterday) — Night Shift ke liye</label>
+          <input type="file" id="rt-yesterday" accept=".xlsx,.xls" style="font-size:11px;color:#94a3b8;width:100%">
+        </div>
+      </div>
+      <button class="btn bp" style="padding:10px 24px;font-size:13px;width:100%" onclick="rtProcess()">⚡ Process</button>
+      <div id="rt-status" style="margin-top:8px;font-size:11px"></div>
+    </div>
+    <div id="rt-dashboard" style="margin-bottom:10px"></div>
+    <div id="rt-table"></div>`;
+  }
   else if(S.tab==='letter'){
     const ltList = ltEmpList();
     h+=`<div class="cd" style="padding:14px;margin-bottom:10px">
@@ -1642,12 +1676,15 @@ function ltGenerateOne(idx) {
 // ── Load docx library ──
 function ltLoadDocx(cb) {
   if (window.docx) { cb(); return; }
-  // Already preloaded at app start — retry after short delay
   let tries = 0;
   const check = () => {
     if (window.docx) { cb(); return; }
-    if (++tries > 20) { toast('docx library load nahi hua! Internet check karo.', true); return; }
-    setTimeout(check, 200);
+    if (++tries > 40) {
+      toast('docx library load nahi hua! Brave Shields OFF karo ya internet check karo.', true);
+      return;
+    }
+    if (tries === 15) toast('docx load ho raha hai, ruko...', false);
+    setTimeout(check, 250);
   };
   check();
 }
@@ -1656,47 +1693,45 @@ function ltLoadDocx(cb) {
 function ltGenerateAll() {
   const list = ltEmpList();
   if (!list.length) { toast('Koi employee saved nahi!', false); return; }
-  toast('Generating docx files...'); 
-  ltLoadDocx(() => {
-    // Load JSZip too
-    if (typeof JSZip === 'undefined') {
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
-      s.onload = () => ltZipAll(list);
-      s.onerror = () => toast('JSZip load nahi hua!', true);
-      document.head.appendChild(s);
-    } else {
-      ltZipAll(list);
-    }
-  });
+  toast('Generating ' + list.length + ' docx files...');
+  ltLoadDocx(() => ltZipAll(list));
 }
 
 async function ltZipAll(list) {
-  const zip = new JSZip();
-  toast('Building ' + list.length + ' Word files...');
+  if (!window.docx) {
+    toast('docx library load nahi hua!', true);
+    return;
+  }
+  toast('Generating ' + list.length + ' Word files...');
+  let ok = 0, fail = 0;
   for (const emp of list) {
     try {
-      const buf = await ltBuildDocx(emp);
+      const blob = await ltBuildDocx(emp);
       const fname = 'Letter_' + emp.name.replace(/\s+/g,'_') + '_' + emp.eid + '.docx';
-      zip.file(fname, buf);
-    } catch(e) { console.error('docx error:', e); }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = fname;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+      ok++;
+      // Small delay between downloads
+      await new Promise(r => setTimeout(r, 300));
+    } catch(e) {
+      fail++;
+      console.error('docx error for ' + emp.name + ':', e);
+      toast('Error: ' + emp.name + ' — ' + e.message, true);
+    }
   }
-  zip.generateAsync({ type: 'blob' }).then(blob => {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'Training_Letters_All.zip';
-    a.click();
-    URL.revokeObjectURL(a.href);
-    toast(list.length + ' Word letters ZIP downloaded!');
-  });
+  toast(ok + ' letters downloaded!' + (fail ? ' (' + fail + ' fail hua)' : ''));
 }
 
 // ── Generate single .docx ──
 function ltMakeAndDownload(emp) {
   ltLoadDocx(async () => {
     try {
-      const buf = await ltBuildDocx(emp);
-      const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      const blob = await ltBuildDocx(emp);
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = 'Letter_' + emp.name.replace(/\s+/g,'_') + '_' + emp.eid + '.docx';
@@ -1836,7 +1871,7 @@ async function ltBuildDocx(emp) {
     }]
   });
 
-  return await Packer.toBuffer(doc);
+  return await Packer.toBlob(doc);
 }
 
 // ── Build letter HTML ──
@@ -2048,7 +2083,7 @@ function filoProcess() {
               const outMins = nextInT.h * 60 + nextInT.min + 1440; // +1440 = overnight
               const workMin = outMins - inMins;
               const wHrs    = Math.floor(workMin/60) + 'h ' + (workMin%60) + 'm';
-              const code    = workMin >= 420 ? 'U' : 'SHORT(U)';
+              const code    = workMin >= 450 ? 'U' : 'SHORT(U)';
 
               processed.push({
                 eid, name,
@@ -2097,13 +2132,29 @@ function filoProcess() {
           return;
         }
 
+        // No OUT punch at all → SKIPPED (OUT nahi kiya)
+        if (!outT) {
+          processed.push({
+            eid, name,
+            inDate:  fmtDate(date),
+            outDate: fmtDate(date),
+            inTime:  inT.str,
+            outTime: '--',
+            workHrs: '--',
+            workMin: 0,
+            code:    'SKIPPED',
+            remark:  'OUT punch missing — OUT nahi kiya'
+          });
+          return;
+        }
+
         // Normal same-day
         const inM  = inT.h * 60 + inT.min;
         const outM = outT ? (outT.h * 60 + outT.min) : inM;
         let workMin = outM - inM;
         if (workMin < 0) workMin += 1440;
         const wHrs = Math.floor(workMin/60) + 'h ' + (workMin%60) + 'm';
-        const code = workMin >= 420 ? 'P' : 'SHORT(P)';
+        const code = workMin >= 450 ? 'P' : 'SHORT(P)';
 
         processed.push({
           eid, name,
@@ -2114,7 +2165,7 @@ function filoProcess() {
           workHrs: wHrs,
           workMin: workMin,
           code:    code,
-          remark:  workMin < 420 ? 'Short duty — ' + wHrs : ''
+          remark:  workMin < 450 ? 'Short duty — ' + wHrs : ''
         });
       });
 
@@ -5609,8 +5660,9 @@ function vwRenderBulkPanel(eid){
     var codeClr=codeColors2[code]||'#94a3b8';
     var bg=isChk?'rgba(245,158,11,.25)':isBlank?'rgba(239,68,68,.06)':'rgba(255,255,255,.03)';
     var border=isChk?'1px solid #f59e0b':isBlank?'1px solid rgba(239,68,68,.2)':'1px solid rgba(255,255,255,.06)';
-    h+='<div style="text-align:center;border-radius:3px;padding:2px 1px;cursor:'+(isBlank?'pointer':'default')+';background:'+bg+';border:'+border+'"';
+    h+='<div style="text-align:center;border-radius:3px;padding:2px 1px;cursor:pointer;background:'+bg+';border:'+border+'"';
     if(isBlank) h+=' onclick="vwToggleBlank('+dd+','+(!isChk)+',\''+eid+'\')"';
+    else h+=' onclick="vwClearFilledDay('+dd+',\''+eid+'\')" title="Click to clear '+code+'"';
     h+='><div style="font-size:9px;font-weight:600;color:'+(isChk?'#f59e0b':'#64748b')+'">'+dd+'</div>';
     h+='<div style="font-size:8px;font-weight:700;color:'+(isBlank?(isChk?'#f59e0b':'#374151'):codeClr)+'">'+(code||'—')+'</div></div>';
   }
@@ -5628,7 +5680,7 @@ function vwRenderBulkPanel(eid){
       h+='<div style="display:flex;align-items:center;gap:2px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:4px;padding:2px 5px">';
       h+='<span style="font-size:9px;color:#94a3b8">'+fmtD+'</span>';
       h+='<span style="font-size:9px;font-weight:700;color:#f59e0b">→'+l.code+'</span>';
-      h+='<button onclick="vwUndo('+JSON.stringify(l)+',\''+eid+'\')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:10px;padding:0 2px" title="Undo">✕</button>';
+      h+='<button onclick="vwUndoByIdx('+li+',\''+eid+'\')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:10px;padding:0 2px" title="Undo">✕</button>';
       h+='</div>';
     });
     h+='</div></div>';
@@ -5812,6 +5864,14 @@ function vwUpdateKbDisplay() {
 }
 
 
+function vwUndoByIdx(empLogIdx, eid) {
+  // empLog is filtered from vwLog for this eid — find actual vwLog index
+  var empLog = vwLog.filter(function(l){ return l.eid === eid; }).slice(0, 10);
+  var entry = empLog[empLogIdx];
+  if (!entry) { toast('Log entry nahi mili!', false); return; }
+  vwUndo(entry, eid);
+}
+
 function vwUndo(logEntry, eid) {
   if (!vwData || !logEntry) return;
   const row = vwData.rows.find(r => r.eid === eid);
@@ -5819,18 +5879,64 @@ function vwUndo(logEntry, eid) {
   const day = logEntry.days && logEntry.days[0] ? logEntry.days[0] : null;
   if (!day) return;
 
-  // Remove code from row
-  delete row.days[day];
+  // Remove code from row — key must be String
+  const dayKey = String(day);
+  delete row.days[dayKey];
+
+  // Also remove from yrAtt (persistent storage)
+  const mon = vwData.mon;
+  const yr  = vwData.yr;
+  const monKey = String(yr) + '-' + String(mon + 1).padStart(2, '0');
+  if (yrAtt[monKey] && yrAtt[monKey][eid]) {
+    const dateKey = dayKey.padStart(2,'0') + '.' + String(mon+1).padStart(2,'0') + '.' + yr;
+    delete yrAtt[monKey][eid].days[dateKey];
+    try { LS.s('yr_' + monKey, yrAtt[monKey]); } catch(e) {}
+  }
 
   // Remove from log
   const idx = vwLog.findIndex(function(l) {
     return l.eid === logEntry.eid && l.code === logEntry.code &&
-           l.days && l.days[0] == day && l.dateTime === logEntry.dateTime;
+           l.days && String(l.days[0]) === dayKey && l.dateTime === logEntry.dateTime;
   });
   if (idx >= 0) vwLog.splice(idx, 1);
   LS.s('vwlog', vwLog);
 
-  toast('Undo: Day ' + day + ' → ' + logEntry.code + ' removed!');
+  toast('Undo: ' + dayKey + ' → ' + logEntry.code + ' hataya!');
+  vwUpdateLogDisplay();
+  vwRenderBulkPanel(eid);
+  vwRender();
+}
+
+function vwClearFilledDay(d, eid) {
+  if (!vwData) return;
+  const row = vwData.rows.find(r => r.eid === eid);
+  if (!row) return;
+  const oldCode = row.days[d];
+  if (!oldCode) return;
+
+  // Show confirm with current code
+  if (!confirm(d + ' tarikh ka code "' + oldCode + '" hatana hai? Naya code apply karne ke liye blank karke checkbox select karo.')) return;
+
+  // Remove from row
+  delete row.days[d];
+
+  // Remove from yrAtt
+  const mon2 = vwData.mon, yr2 = vwData.yr;
+  const monKey2 = String(yr2) + '-' + String(mon2 + 1).padStart(2, '0');
+  if (yrAtt[monKey2] && yrAtt[monKey2][eid]) {
+    const dk = String(d).padStart(2,'0') + '.' + String(mon2+1).padStart(2,'0') + '.' + yr2;
+    delete yrAtt[monKey2][eid].days[dk];
+    try { LS.s('yr_' + monKey2, yrAtt[monKey2]); } catch(e) {}
+  }
+
+  // Log it
+  const now = new Date();
+  const dtStr = now.toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  vwLog.unshift({ dateTime: dtStr, eid, name: row.name, code: '[DEL]'+oldCode, dates: String(d), days: [d], mon: mon2, yr: yr2 });
+  LS.s('vwlog', vwLog);
+
+  toast(d + ' → ' + oldCode + ' hata diya! Ab naya code select karo.');
+  vwUpdateLogDisplay();
   vwRenderBulkPanel(eid);
   vwRender();
 }
@@ -5860,10 +5966,19 @@ function vwApplyCode(code,eid){
   const dateTimeStr=now.toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   const appliedDays=[...vwBlankChecked].sort((a,b)=>a-b);
   
+  const _mon2 = vwData.mon, _yr2 = vwData.yr;
+  const _monKey2 = String(_yr2) + '-' + String(_mon2 + 1).padStart(2, '0');
+  if (!yrAtt[_monKey2]) yrAtt[_monKey2] = {};
+  if (!yrAtt[_monKey2][eid]) yrAtt[_monKey2][eid] = { name: row.name, days: {}, info: {} };
+
   appliedDays.forEach(d=>{
     row.days[d]=code;
+    // Persistent save to yrAtt
+    const _dk = String(d).padStart(2,'0') + '.' + String(_mon2+1).padStart(2,'0') + '.' + _yr2;
+    yrAtt[_monKey2][eid].days[_dk] = code;
   });
-  
+  try { LS.s('yr_' + _monKey2, yrAtt[_monKey2]); } catch(e) {}
+
   // Log entry — har din ki alag row
   const newEntries = appliedDays.map(function(d){
     return {
@@ -10910,154 +11025,185 @@ function psUploadHTML() {
 }
 
 // ── Parse HTML payslip (SAP format) ──
+// ── SAP Payslip HTML Parser — nobr &#x21; pipe format ──
+// Each <nobr> contains fixed-width text with ! (&#x21;) as column delimiter
+// Employee starts at line: "!South Eastern Coalfields !Employee Code :XXXXXXXX ..."
+// Month extracted from: "!Month-Yr :JAN-2026 ..."
 function psParseHTMLPayslip(html, filename) {
-  // Use DOMParser to parse HTML
+  // ── SAP nobr &#x21; pipe-delimited format parser ──
+  // Step 1: Extract text from all <nobr> elements
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
+  const nobrEls = doc.querySelectorAll('nobr');
+  if (!nobrEls.length) return [];
 
-  // Try to get all tables
-  const tables = doc.querySelectorAll('table');
-  if (!tables.length) return [];
+  // Step 2: Collect text lines from nobr elements
+  const lines = [];
+  nobrEls.forEach(function(el) {
+    // Replace non-breaking spaces ( ) with regular spaces
+    const txt = (el.textContent || '').replace(/ /g, ' ').trim();
+    if (txt && txt.length > 2) lines.push(txt);
+  });
 
-  // SAP payslip HTML has multiple employees — each section is one slip
-  // Find month/year from HTML
-  let monthYr = '';
-  const bodyText = doc.body ? doc.body.innerText || doc.body.textContent : '';
-
-  // Try to find month year pattern
-  const mnMatch = bodyText.match(/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s\/\-]*(\d{4})/i);
-  if (mnMatch) {
-    const mn = mnMatch[0].substring(0, 3).toUpperCase();
-    monthYr = mn + '-' + mnMatch[1];
-  }
-
-  // Fallback: try filename
-  if (!monthYr) {
-    const fm = filename.toUpperCase().match(/(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\w*[_\s\-]*(\d{4})/);
-    if (fm) monthYr = fm[1].substring(0, 3) + '-' + fm[2];
-  }
-
-  if (!monthYr) {
-    // Try numeric pattern 2026-04 or 04-2026
-    const nm = filename.match(/(\d{4})[_\-](\d{2})/);
-    if (nm) {
-      const mn2 = parseInt(nm[2]);
-      if (mn2 >= 1 && mn2 <= 12) monthYr = YMN[mn2 - 1] + '-' + nm[1];
-    }
-  }
-
-  // Parse using existing psReadSlipExcel logic — but from HTML tables
-  // Convert HTML to XLSX workbook first
+  // Step 3: Parse lines into slips
   const slips = [];
+  let cur = null;
+  let attdHeaderSeen = false;
+  let attdSubHeaderSeen = false;
 
-  // Each table may be a payslip — find tables with employee data
-  // SAP HTML payslip: look for "Personnel No" or "Employee ID" in table
-  let currentSlip = null;
+  function finalizeCur() {
+    if (cur && cur.eid) slips.push(cur);
+    cur = null;
+    attdHeaderSeen = false;
+    attdSubHeaderSeen = false;
+  }
 
-  tables.forEach(function(tbl) {
-    const rows = tbl.querySelectorAll('tr');
-    rows.forEach(function(row) {
-      const cells = row.querySelectorAll('td, th');
-      const cellTexts = Array.from(cells).map(function(c) { return (c.textContent || '').trim(); });
-      const rowText = cellTexts.join(' ').toLowerCase();
+  function extractAmt(text, keyRe) {
+    const re = new RegExp(keyRe + '[^:]*:\\s*([\\d,]+\\.?\\d*)', 'i');
+    const m = text.match(re);
+    return m ? parseFloat(m[1].replace(/,/g, '')) : null;
+  }
 
-      // Detect new employee slip start
-      if (/personnel.?no|employee.?id|pers\.no|pernr/i.test(rowText)) {
-        if (currentSlip && currentSlip.eid) slips.push(currentSlip);
-        currentSlip = { earnings: [], deductions: [], attendance: {}, monthYr: monthYr };
-      }
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
 
-      if (!currentSlip) return;
+    // ── Employee start: "South Eastern Coalfields" + "Employee Code"
+    if (/South\s+Eastern\s+Coalfields/i.test(line) && /Employee\s+Code/i.test(line)) {
+      finalizeCur();
+      cur = { earnings: [], deductions: [], attendance: {}, monthYr: '' };
+      attdHeaderSeen = false;
+      attdSubHeaderSeen = false;
 
-      // Extract EID
-      if (/personnel.?no|pernr/i.test(cellTexts[0]) && cellTexts[1]) {
-        currentSlip.eid = cellTexts[1].replace(/\D/g, '').trim();
-      }
-      // Name
-      if (/^name$/i.test(cellTexts[0]) && cellTexts[1]) {
-        currentSlip.name = cellTexts[1].trim();
-      }
-      // Designation/Position
-      if (/designation|position/i.test(cellTexts[0]) && cellTexts[1]) {
-        currentSlip.designation = cellTexts[1].trim();
-      }
-      // Pay Point
-      if (/pay.?point|paypoint/i.test(cellTexts[0]) && cellTexts[1]) {
-        currentSlip.payPoint = cellTexts[1].trim();
-      }
-      // Department
-      if (/department|dept/i.test(cellTexts[0]) && cellTexts[1]) {
-        currentSlip.dept = cellTexts[1].trim();
-      }
-      // Basic Pay / earnings
-      if (cellTexts.length >= 2) {
-        const label = cellTexts[0];
-        const amt = parseFloat((cellTexts[1] || '').replace(/,/g, ''));
-        if (!isNaN(amt) && amt > 0) {
-          if (/basic|bp/i.test(label)) currentSlip.basic = amt;
-          else if (/hra|house/i.test(label)) currentSlip.hra = amt;
-          else if (/gross/i.test(label)) currentSlip.gross = amt;
-          else if (/net/i.test(label)) currentSlip.net = amt;
-          else if (/pf|provident/i.test(label)) currentSlip.pf = amt;
-          else if (/total.*earn/i.test(label)) currentSlip.totalEarnings = amt;
-          else if (/total.*deduct/i.test(label)) currentSlip.totalDeductions = amt;
-        }
-      }
-      // Attendance
-      if (/actual.*day|days.*work|att.*day/i.test(rowText) && cellTexts[1]) {
-        currentSlip.attendance.actualDays = parseFloat(cellTexts[1]) || 0;
-      }
+      const eidM = line.match(/Employee\s+Code\s*[:\s]+(\d{6,12})/i);
+      if (eidM) cur.eid = eidM[1].trim();
+
+      // Name: after "Name :" upto next ! or 2+ spaces
+      const nameM = line.match(/Name\s*:\s*([A-Z][A-Z\s\.\-&]+?)(?:\s{2,}|!|$)/i);
+      if (nameM) cur.name = nameM[1].trim().replace(/\s+/g, ' ');
+
+      continue;
+    }
+
+    if (!cur) continue;
+
+    // ── Skip separator lines
+    if (/^[-=]{10,}/.test(line)) continue;
+
+    // ── Designation line
+    if (/Designation\s*:/i.test(line)) {
+      const desigM = line.match(/Designation\s*:\s*([A-Z][A-Z\s\.\-\/\(\)]+?)(?:\s{2,}|!|$)/i);
+      if (desigM && !cur.designation) cur.designation = desigM[1].trim().replace(/\s+/g,' ');
+    }
+
+    // ── Department line
+    if (/Department\s*:/i.test(line)) {
+      const deptM = line.match(/Department\s*:\s*([A-Z][A-Z\s&\(\)\/]+?)(?:\s{2,}|!|$)/i);
+      if (deptM && !cur.dept) cur.dept = deptM[1].trim().replace(/\s+/g,' ');
+    }
+
+    // ── Grade line
+    if (/Grade\s*:/i.test(line) && /UGA\s+Code/i.test(line)) {
+      const gradeM = line.match(/Grade\s*:\s*([A-Z][A-Z\s&0-9]+?)(?:\s{2,}|!|$)/i);
+      if (gradeM) cur.grade = gradeM[1].trim().replace(/\s+/g,' ');
+    }
+
+    // ── Month-Yr line
+    if (/Month-Yr\s*:/i.test(line)) {
+      const myrM = line.match(/Month-Yr\s*:\s*([A-Z]{3}-\d{4})/i);
+      if (myrM && !cur.monthYr) cur.monthYr = myrM[1].toUpperCase();
+    }
+
+    // ── Attendance header: "Month-Yr ! ATTD ! Off Days ..."
+    if (/Month-Yr\s*!\s*ATTD\s*!/i.test(line)) {
+      attdHeaderSeen = true;
+      attdSubHeaderSeen = false;
+      continue;
+    }
+
+    // ── Attendance sub-header: "! ! ! WO ! HO ..."
+    if (attdHeaderSeen && !attdSubHeaderSeen && /WO\s*.*HO/i.test(line)) {
+      attdSubHeaderSeen = true;
+      continue;
+    }
+
+    // ── Attendance Curr data row
+    if (attdHeaderSeen && attdSubHeaderSeen && /^Curr\s*!/i.test(line)) {
+      const parts = line.split('!').map(function(s){ return s.trim(); });
+      // parts[0]=Curr, [1]=ATTD, [2]=WO, [3]=HO, [4]=EL, [5]=CL, [6]=SL, [7]=HPL, [8]=SPL, [9]=CML, [10]=Other, [11]=ABS, [12]=UG Days, [13]=NS Days, [14]=LV Days, [15]=Chg, [16]=Sunday Hr, [17]=Sun Single, [18]=Sun Double, [19]=Holi Single, [20]=Holi Double, [21]=OT Paid, [22]=OT Due, [23]=Paid Days
+      cur.attendance.attd     = parseInt(parts[1]) || 0;
+      cur.attendance.wo       = parseInt(parts[2]) || 0;
+      cur.attendance.ho       = parseInt(parts[3]) || 0;
+      cur.attendance.el       = parseInt(parts[4]) || 0;
+      cur.attendance.cl       = parseInt(parts[5]) || 0;
+      cur.attendance.sl       = parseInt(parts[6]) || 0;
+      cur.attendance.hpl      = parseInt(parts[7]) || 0;
+      cur.attendance.abs      = parseInt(parts[11]) || 0;
+      cur.attendance.ugDays   = parseInt(parts[12]) || 0;
+      cur.attendance.paidDays = parseFloat(parts[23]) || 0;
+      continue;
+    }
+
+    // ── Total Gross line (separate from Net Pay)
+    if (/Total\s+Gross\s*:/i.test(line)) {
+      const tg = extractAmt(line, 'Total\\s+Gross');
+      const td = extractAmt(line, 'Total\\s+Deduction');
+      if (tg !== null) cur.gross = tg;
+      if (td !== null) cur.totalDeductions = td;
+      continue;
+    }
+
+    // ── Net Pay line
+    if (/Net\s+Pay\s*:/i.test(line)) {
+      const np = extractAmt(line, 'Net\\s+Pay');
+      if (np !== null) cur.net = np;
+      continue;
+    }
+
+    // ── Earnings / Deductions lines (format: LABEL   :   AMOUNT)
+    // These start with ! then label: amount
+    const earnSegs = line.split('!');
+    earnSegs.forEach(function(seg) {
+      seg = seg.trim();
+      const m = seg.match(/^([A-Z][A-Z\s\.\-\/]{1,14})\s*:\s*([\d,]+\.?\d*)/);
+      if (!m) return;
+      const label = m[1].trim().toUpperCase().replace(/\s+/g,' ');
+      const amt = parseFloat(m[2].replace(/,/g,''));
+      if (isNaN(amt) || amt <= 0) return;
+      if (/^BASIC/.test(label)) { if (!cur.basic || amt > cur.basic) cur.basic = amt; }
+      else if (/^VDA/.test(label)) cur.vda = amt;
+      else if (/^SDA/.test(label)) cur.sda = amt;
+      else if (/^TRNS/.test(label)) cur.transport = amt;
+      else if (/^WASH/.test(label)) cur.washAllw = amt;
+      else if (/^NIGHT\s+ALLW/.test(label)) cur.nightAllw = amt;
+      else if (/^WEEK\s+OFF/.test(label)) cur.weekOff = amt;
+      else if (/^HOLIDAY/.test(label)) cur.holiday = amt;
+      else if (/^SPL\s+ALLW/.test(label)) cur.splAllw = amt;
+      else if (/^UG\s+ALLW/.test(label)) cur.ugAllw = amt;
+      else if (/^CMPF$/.test(label)) cur.cmpf = amt;
+      else if (/^CMPS$/.test(label)) cur.cmps = amt;
+      else if (/^ELEC\s+CHRG/.test(label)) cur.elecChrg = amt;
+      else if (/^LIC\s+PREM/.test(label)) cur.lic = amt;
+      else if (/^INC\s+TAX/.test(label)) cur.incomeTax = amt;
+      else if (/^CPRMSNE/.test(label)) cur.cprmsne = amt;
+      else if (/^NURSING/.test(label)) cur.nursingAllw = amt;
+      else if (/^GAS\s+CYL/.test(label)) cur.gasCylinder = amt;
     });
-  });
-
-  if (currentSlip && currentSlip.eid) slips.push(currentSlip);
-
-  // If HTML parsing gave no results, try the existing TXT-based approach
-  // (SAP exports vary — fallback to raw text parsing)
-  if (!slips.length) {
-    return psParseHTMLFallback(html, filename, monthYr);
   }
 
-  return slips;
-}
+  finalizeCur();
 
-// ── Fallback: parse HTML as raw text (SAP payslip text export format) ──
-function psParseHTMLFallback(html, filename, monthYr) {
-  // Strip HTML tags
-  const text = html.replace(/<[^>]+>/g, '\n').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&');
-  const lines = text.split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
-
-  const slips = [];
-  let current = null;
-
-  lines.forEach(function(line) {
-    if (/personnel.?no[:\s]+(\d+)/i.test(line)) {
-      if (current && current.eid) slips.push(current);
-      current = { earnings: [], deductions: [], attendance: {}, monthYr: monthYr };
-      const m = line.match(/(\d{7,10})/);
-      if (m) current.eid = m[1];
-    }
-    if (!current) return;
-    if (/^name[:\s]+(.+)/i.test(line)) {
-      const m = line.match(/name[:\s]+(.+)/i);
-      if (m) current.name = m[1].trim();
-    }
-    // Basic pay
-    const amtM = line.match(/^([A-Za-z\s\/]+)\s+([\d,]+\.?\d*)\s*$/);
-    if (amtM) {
-      const label = amtM[1].trim().toLowerCase();
-      const amt = parseFloat(amtM[2].replace(/,/g, ''));
-      if (!isNaN(amt)) {
-        if (/basic/.test(label)) current.basic = amt;
-        else if (/hra/.test(label)) current.hra = amt;
-        else if (/gross/.test(label)) current.gross = amt;
-        else if (/net/.test(label)) current.net = amt;
-        else if (/^pf|provident/.test(label)) current.pf = amt;
+  // Fallback month from filename
+  slips.forEach(function(s) {
+    if (!s.monthYr) {
+      const fm = filename.toUpperCase().match(/(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[^_\-\d]*[_\-]?(\d{4})/);
+      if (fm) { s.monthYr = fm[1].substring(0,3) + '-' + fm[2]; }
+      else {
+        const nm = filename.match(/(\d{4})[_\-](\d{2})/);
+        if (nm) { const mn=parseInt(nm[2]); if(mn>=1&&mn<=12) s.monthYr=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][mn-1]+'-'+nm[1]; }
       }
     }
   });
 
-  if (current && current.eid) slips.push(current);
   return slips;
 }
 
